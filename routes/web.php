@@ -6,6 +6,7 @@ use App\Http\Controllers\DeviceController;
 use App\Http\Controllers\FloorController;
 use App\Http\Controllers\MaintenanceLogController;
 use App\Http\Controllers\RoomController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 // Auth routes (no middleware)
@@ -37,6 +38,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/devices/{device}/parts', [DeviceController::class, 'storePart'])->name('devices.parts.store');
         Route::put('/devices/{device}/parts/{part}', [DeviceController::class, 'updatePart'])->name('devices.parts.update');
         Route::delete('/devices/{device}/parts/{part}', [DeviceController::class, 'destroyPart'])->name('devices.parts.destroy');
+        Route::patch('/devices/{device}/position', [DeviceController::class, 'updatePosition'])->name('devices.updatePosition');
+        Route::put('/devices/{device}/quick-update', [DeviceController::class, 'quickUpdate'])->name('devices.quickUpdate');
+        Route::get('/users', [UserController::class, 'index'])->name('users.index');
+        Route::post('/users', [UserController::class, 'store'])->name('users.store');
+        Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
+        Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
     });
 
     // Maintenance
@@ -45,6 +52,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/maintenance/create/{device}', [MaintenanceLogController::class, 'createForDevice'])->name('maintenance.create.device');
     Route::post('/maintenance', [MaintenanceLogController::class, 'store'])->name('maintenance.store');
     Route::get('/maintenance/{log}', [MaintenanceLogController::class, 'show'])->name('maintenance.show');
+    Route::get('/maintenance/{log}/edit', [MaintenanceLogController::class, 'edit'])->name('maintenance.edit');
+    Route::put('/maintenance/{log}', [MaintenanceLogController::class, 'update'])->name('maintenance.update');
 
     // Floor
     Route::middleware(['auth', 'admin'])->group(function () {

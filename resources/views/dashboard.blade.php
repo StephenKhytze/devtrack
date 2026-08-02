@@ -14,9 +14,16 @@
         @endforeach
     </div>
 
+    @if (auth()->user()->access_type === 'admin')
+        <a href="{{ route('users.index') }}"
+        class="ml-auto px-4 py-2 text-base font-medium border border-gray-300 text-gray-600 rounded-md hover:bg-gray-100 transition">
+            Manage users
+        </a>
+    @endif
+
     <a href="{{ route('report', ['range' => $range]) }}"
        target="_blank"
-       class="px-4 py-2 text-base font-medium border border-gray-300 text-gray-600 rounded-md hover:bg-gray-100 transition ml-auto">
+       class="px-4 py-2 text-base font-medium border border-gray-300 text-gray-600 rounded-md hover:bg-gray-100 transition">
         Print report
     </a>
 @endsection

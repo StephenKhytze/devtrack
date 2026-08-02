@@ -48,7 +48,7 @@
                         <label class="text-base font-medium text-gray-700">Type</label>
                         <select name="type"
                                 class="text-base border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-green-700">
-                            @foreach (['desktop','printer','photocopier','telephone','aircon','appliance','network','monitor','other'] as $type)
+                            @foreach (['desktop','laptop','printer','photocopier','telephone','aircon','appliance','network','monitor','other'] as $type)
                                 <option value="{{ $type }}" {{ old('type', $device->type) === $type ? 'selected' : '' }}>
                                     {{ ucfirst($type) }}
                                 </option>
@@ -57,9 +57,23 @@
                     </div>
 
                     <div class="flex flex-col gap-1">
-                        <label class="text-base font-medium text-gray-700">Model number</label>
+                        <label class="text-base font-medium text-gray-700">Model</label>
                         <input type="text" name="model_num" value="{{ old('model_num', $device->model_num) }}"
                                class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
+                    </div>
+
+                    <div class="flex flex-col gap-1">
+                        <label class="text-base font-medium text-gray-700">Serial number</label>
+                        <input type="text" name="serial_number"
+                            value="{{ old('serial_number', $device->serial_number) }}"
+                            class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
+                    </div>
+
+                    <div class="flex flex-col gap-1">
+                        <label class="text-base font-medium text-gray-700">Inventory number</label>
+                        <input type="text" name="inventory_number"
+                            value="{{ old('inventory_number', $device->inventory_number) }}"
+                            class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
                     </div>
 
                     <div class="flex flex-col gap-1">
@@ -117,7 +131,7 @@
                         <button type="button"
                                 onclick="toggleMap()"
                                 id="map-toggle-btn"
-                                class="px-4 py-2 text-sm font-medium border border-gray-300 text-gray-600 rounded-md hover:bg-gray-100 transition">
+                                class="px-4 py-2 text-xs font-medium border border-gray-300 text-gray-600 rounded-md hover:bg-gray-100 transition">
                             Set position on map
                         </button>
                     </div>
@@ -145,29 +159,40 @@
 
         {{-- Full width position map --}}
         <div id="position-map" class="hidden flex flex-col gap-2">
-            <div class="bg-white border border-gray-200 rounded-xl px-4 pt-4">
-                <p class="text-base font-medium text-gray-700">Set position on map</p>
-                <p class="text-sm text-gray-400 mt-1 mb-3">Click anywhere on the map to place the device. Change the room selection above to switch maps.</p>
-            </div>
+            <div class="bg-white border border-gray-200 rounded-xl p-4 flex flex-col gap-3">
 
-            <div id="map-container"
-                class="relative w-full border-2 border-green-700"
-                style="aspect-ratio: 1420 / 651;">
-
-                <img id="map-image"
-                    src="{{ asset('images/map.png') }}"
-                    draggable="false"
-                    class="absolute inset-0 w-full h-full object-contain select-none pointer-events-none"
-                    alt="Map">
-
-                <div id="map-placeholder"
-                    class="hidden absolute inset-0 flex items-center justify-center text-base text-gray-400 pointer-events-none">
-                    No room image available — enter position manually.
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-700">Set position on map</p>
+                        <p class="text-xs text-gray-400">Click anywhere on the map to place the device.</p>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs text-gray-500">
+                        <span class="w-3 h-3 rounded-full bg-gray-500 inline-block border border-white"></span>
+                        Device position
+                    </div>
                 </div>
 
-                <div id="drag-circle"
-                    class="absolute w-5 h-5 rounded-full bg-gray-500 border-2 border-white cursor-crosshair"
-                    style="left: {{ $device->pos_x ?? 50 }}%; top: {{ $device->pos_y ?? 50 }}%; transform: translate(-50%, -50%); pointer-events: none;">
+                {{-- Map container — exact same rendering as floor layout --}}
+                <div id="map-outer" class="relative w-full border-2 border-green-700 overflow-hidden"
+                    style="aspect-ratio: 2307 / 1559;">
+
+                    <img id="map-image"
+                        src="{{ asset('images/map.png') }}"
+                        draggable="false"
+                        class="absolute inset-0 w-full h-full object-contain select-none pointer-events-none"
+                        alt="Map"
+                        id="map-img">
+
+                    <div id="map-placeholder"
+                        class="hidden absolute inset-0 flex items-center justify-center text-sm text-gray-400 pointer-events-none bg-gray-50">
+                        No room image available — enter position manually.
+                    </div>
+
+                    <div id="drag-circle"
+                        class="absolute w-5 h-5 rounded-full bg-gray-500 border-2 border-white cursor-crosshair z-10"
+                        style="left: 50%; top: 50%; transform: translate(-50%, -50%); pointer-events: none;">
+                    </div>
+
                 </div>
 
             </div>
@@ -195,7 +220,7 @@
             @forelse ($device->parts as $part)
                 <form method="POST"
                       action="{{ route('devices.parts.update', [$device->id, $part->id]) }}"
-                      class="grid grid-cols-4 gap-3 pb-4 border-b border-gray-100">
+                      class="grid grid-cols-3 gap-3 pb-4 border-b border-gray-100">
                     @csrf
                     @method('PUT')
 
@@ -212,19 +237,6 @@
                     </div>
 
                     <div class="flex flex-col gap-1">
-                        <label class="text-sm font-medium text-gray-700">Serial number</label>
-                        <input type="text" name="serial_number"
-                            value="{{ old('serial_number', $device->serial_number ?? '') }}"
-                            class="text-sm border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
-                    </div>
-
-                    <div class="flex flex-col gap-1">
-                        <label class="text-sm font-medium text-gray-500">Specs</label>
-                        <input type="text" name="specs" value="{{ old('specs', $part->specs) }}"
-                               class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
-                    </div>
-
-                    <div class="flex flex-col gap-1">
                         <label class="text-sm font-medium text-gray-500">Status</label>
                         <select name="status_id"
                                 class="text-base border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-green-700">
@@ -236,7 +248,27 @@
                         </select>
                     </div>
 
-                    <div class="col-span-4 flex gap-2">
+                    <div class="flex flex-col gap-1">
+                        <label class="text-sm font-medium text-gray-500">Inventory number</label>
+                        <input type="text" name="inventory_number"
+                            value="{{ old('inventory_number', $part->inventory_number) }}"
+                            class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
+                    </div>
+
+                    <div class="flex flex-col gap-1">
+                        <label class="text-sm font-medium text-gray-500">Serial number</label>
+                        <input type="text" name="serial_number"
+                            value="{{ old('serial_number', $part->serial_number) }}"
+                            class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
+                    </div>
+
+                    <div class="flex flex-col gap-1">
+                        <label class="text-sm font-medium text-gray-500">Specs</label>
+                        <input type="text" name="specs" value="{{ old('specs', $part->specs) }}"
+                               class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
+                    </div>
+
+                    <div class="col-span-3 flex gap-2">
                         <button type="submit"
                                 class="px-4 py-1.5 text-sm font-medium bg-green-700 text-white rounded-md hover:bg-green-800 transition">
                             Save part
@@ -267,7 +299,7 @@
                 <p class="text-base font-medium text-gray-700 mb-3">Add new part</p>
                 <form method="POST"
                       action="{{ route('devices.parts.store', $device->id) }}"
-                      class="grid grid-cols-4 gap-3">
+                      class="grid grid-cols-3 gap-3">
                     @csrf
 
                     <div class="flex flex-col gap-1">
@@ -283,12 +315,6 @@
                     </div>
 
                     <div class="flex flex-col gap-1">
-                        <label class="text-sm font-medium text-gray-500">Specs</label>
-                        <input type="text" name="specs" placeholder="Optional"
-                               class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
-                    </div>
-
-                    <div class="flex flex-col gap-1">
                         <label class="text-sm font-medium text-gray-500">Status</label>
                         <select name="status_id"
                                 class="text-base border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-green-700">
@@ -298,7 +324,25 @@
                         </select>
                     </div>
 
-                    <div class="col-span-4">
+                    <div class="flex flex-col gap-1">
+                        <label class="text-sm font-medium text-gray-500">Inventory number</label>
+                        <input type="text" name="inventory_number" placeholder="Optional"
+                               class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
+                    </div>
+
+                    <div class="flex flex-col gap-1">
+                        <label class="text-sm font-medium text-gray-500">Serial number</label>
+                        <input type="text" name="serial_number" placeholder="Optional"
+                               class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
+                    </div>
+
+                    <div class="flex flex-col gap-1">
+                        <label class="text-sm font-medium text-gray-500">Specs</label>
+                        <input type="text" name="specs" placeholder="Optional"
+                               class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
+                    </div>
+
+                    <div class="col-span-3">
                         <button type="submit"
                                 class="px-4 py-1.5 text-sm font-medium border border-green-700 text-green-700 rounded-md hover:bg-green-50 transition">
                             + Add part
@@ -313,18 +357,22 @@
 </div>
 
 <style>
-    body.dragging { cursor: grabbing !important; user-select: none; }
+    body.dragging * { cursor: crosshair !important; user-select: none; }
 </style>
 
 <script>
     let isDragging    = false;
     let dragStartX    = 0;
     let dragStartY    = 0;
-    let dragThreshold = 5;
+    const THRESHOLD   = 5;
     const floorMapUrl = "{{ asset('images/map.png') }}";
 
-    // ── Map toggle ───────────────────────────────────────────
+    // For edit.blade.php use $device->pos_x and $device->pos_y
+    // For create.blade.php use old('pos_x') or 50 as default
+    const initialX = {{ old('pos_x', $device->pos_x ?? 50) }};
+    const initialY = {{ old('pos_y', $device->pos_y ?? 50) }};
 
+    // ── Map toggle ─────────────────────────────────────────
     function toggleMap() {
         const map      = document.getElementById('position-map');
         const btn      = document.getElementById('map-toggle-btn');
@@ -332,77 +380,95 @@
         map.classList.toggle('hidden', !isHidden);
         btn.textContent = isHidden ? 'Hide map' : 'Set position on map';
         if (isHidden) {
-            syncCircleFromInputs();
-            switchMap();
+            // Wait for map to render before syncing
+            requestAnimationFrame(() => {
+                syncCircleFromInputs();
+                switchMap();
+            });
         }
     }
 
+    // ── Switch map image based on room selection ────────────
     function switchMap() {
         const select    = document.getElementById('room_id');
-        const selected  = select.options[select.selectedIndex];
+        const selected  = select?.options[select.selectedIndex];
         const imageUrl  = selected ? selected.getAttribute('data-image') : '';
+        const mapOuter  = document.getElementById('map-outer');
+        const mapImage  = document.getElementById('map-image');
+        const placeholder = document.getElementById('map-placeholder');
+        const circle    = document.getElementById('drag-circle');
 
-        const mapImage       = document.getElementById('map-image');
-        const mapPlaceholder = document.getElementById('map-placeholder');
-        const dragCircle     = document.getElementById('drag-circle');
-
-        if (select.value !== '' && !imageUrl) {
+        if (select?.value !== '' && !imageUrl) {
+            // Room selected but no image
             mapImage.classList.add('hidden');
-            mapPlaceholder.classList.remove('hidden');
-            dragCircle.classList.add('hidden');
-        } else {
-            mapImage.src = imageUrl || floorMapUrl;
+            placeholder.classList.remove('hidden');
+            circle.classList.add('hidden');
+        } else if (imageUrl) {
+            // Room with image — switch aspect ratio to 4:3
+            mapOuter.style.aspectRatio = '1967 / 900';
+            mapImage.src = imageUrl;
             mapImage.classList.remove('hidden');
-            mapPlaceholder.classList.add('hidden');
-            dragCircle.classList.remove('hidden');
+            placeholder.classList.add('hidden');
+            circle.classList.remove('hidden');
+        } else {
+            // No room — floor map
+            mapOuter.style.aspectRatio = '2307 / 1559';
+            mapImage.src = floorMapUrl;
+            mapImage.classList.remove('hidden');
+            placeholder.classList.add('hidden');
+            circle.classList.remove('hidden');
         }
+
+        // Re-sync circle after image switch
+        requestAnimationFrame(() => syncCircleFromInputs());
     }
 
-    // ── Drag logic ───────────────────────────────────────────
+    // ── Core position calculation ───────────────────────────
+    function getPosition(e) {
+        const container = document.getElementById('map-outer');
+        const img       = document.getElementById('map-image');
+        const cRect     = container.getBoundingClientRect();
 
-    document.addEventListener('DOMContentLoaded', () => {
-        const mapContainer = document.getElementById('map-container');
+        const cW = cRect.width;
+        const cH = cRect.height;
+        const iW = img.naturalWidth;
+        const iH = img.naturalHeight;
 
-        mapContainer.addEventListener('mousedown', e => {
+        const scale     = Math.min(cW / iW, cH / iH);
+        const renderedW = iW * scale;
+        const renderedH = iH * scale;
+        const offsetX   = (cW - renderedW) / 2;
+        const offsetY   = (cH - renderedH) / 2;
+
+        let x = ((e.clientX - cRect.left - offsetX) / renderedW) * 100;
+        let y = ((e.clientY - cRect.top  - offsetY) / renderedH) * 100;
+
+        return {
+            x: Math.max(0, Math.min(100, x)),
+            y: Math.max(0, Math.min(100, y)),
+        };
+    }
+
+    // ── Mouse events ────────────────────────────────────────
+    document.getElementById('map-outer').addEventListener('mousedown', e => {
+        if (e.target.id === 'drag-circle' ||
+            e.target.id === 'map-outer'   ||
+            e.target.id === 'map-image') {
             isDragging = true;
             dragStartX = e.clientX;
             dragStartY = e.clientY;
+            applyPosition(e);
             e.preventDefault();
-
-            const rect = mapContainer.getBoundingClientRect();
-            const x    = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width)  * 100));
-            const y    = Math.max(0, Math.min(100, ((e.clientY - rect.top)  / rect.height) * 100));
-
-            document.getElementById('pos_x').value = x.toFixed(3);
-            document.getElementById('pos_y').value = y.toFixed(3);
-            moveCircle(x, y);
-        });
-
-        syncCircleFromInputs();
-        switchMap();
+        }
     });
 
     document.addEventListener('mousemove', e => {
         if (!isDragging) return;
-
         const dx = Math.abs(e.clientX - dragStartX);
         const dy = Math.abs(e.clientY - dragStartY);
-        if (dx < dragThreshold && dy < dragThreshold) return;
-
+        if (dx < THRESHOLD && dy < THRESHOLD) return;
         document.body.classList.add('dragging');
-
-        const placeholder = document.getElementById('map-placeholder');
-        if (!placeholder.classList.contains('hidden')) return;
-
-        const container = document.getElementById('map-container');
-        const rect      = container.getBoundingClientRect();
-
-        const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width)  * 100));
-        const y = Math.max(0, Math.min(100, ((e.clientY - rect.top)  / rect.height) * 100));
-
-        document.getElementById('pos_x').value = x.toFixed(3);
-        document.getElementById('pos_y').value = y.toFixed(3);
-        moveCircle(x, y);
+        applyPosition(e);
     });
 
     document.addEventListener('mouseup', () => {
@@ -410,18 +476,53 @@
         document.body.classList.remove('dragging');
     });
 
+    // ── Apply position to inputs and circle ─────────────────
+    function applyPosition(e) {
+        const placeholder = document.getElementById('map-placeholder');
+        if (!placeholder.classList.contains('hidden')) return;
+
+        const { x, y } = getPosition(e);
+        document.getElementById('pos_x').value = x.toFixed(3);
+        document.getElementById('pos_y').value = y.toFixed(3);
+        moveCircle(x, y);
+    }
+
     function moveCircle(x, y) {
-        const circle       = document.getElementById('drag-circle');
-        circle.style.left      = x + '%';
-        circle.style.top       = y + '%';
+        const container = document.getElementById('map-outer');
+        const img       = document.getElementById('map-image');
+        const cRect     = container.getBoundingClientRect();
+
+        const cW = cRect.width;
+        const cH = cRect.height;
+        const iW = img.naturalWidth;
+        const iH = img.naturalHeight;
+
+        const scale     = Math.min(cW / iW, cH / iH);
+        const renderedW = iW * scale;
+        const renderedH = iH * scale;
+        const offsetX   = (cW - renderedW) / 2;
+        const offsetY   = (cH - renderedH) / 2;
+
+        const pixelX = offsetX + (x / 100) * renderedW;
+        const pixelY = offsetY + (y / 100) * renderedH;
+
+        const circle = document.getElementById('drag-circle');
+        circle.style.left      = pixelX + 'px';
+        circle.style.top       = pixelY + 'px';
         circle.style.transform = 'translate(-50%, -50%)';
     }
 
     function syncCircleFromInputs() {
-        const x = parseFloat(document.getElementById('pos_x').value) || 50;
-        const y = parseFloat(document.getElementById('pos_y').value) || 50;
+        const x = parseFloat(document.getElementById('pos_x').value) || initialX;
+        const y = parseFloat(document.getElementById('pos_y').value) || initialY;
         moveCircle(x, y);
     }
+
+    // ── Init ────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+        syncCircleFromInputs();
+        switchMap();
+    });
 </script>
 
 @endsection

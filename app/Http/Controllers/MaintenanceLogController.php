@@ -14,6 +14,7 @@ class MaintenanceLogController extends Controller
     {
         $devices  = Device::orderBy('name')->get();
         $statuses = DeviceStatus::all();
+        $sort     = $request->get('sort', 'recent');
 
         $query = MaintenanceLog::with(['device.room', 'statusBefore', 'statusAfter', 'performedBy'])
             ->orderBy('date', 'desc')
@@ -44,9 +45,9 @@ class MaintenanceLogController extends Controller
             });
         }
 
-        $logs = $query->get();
+        $logs = $query->paginate(10)->withQueryString();
 
-        return view('maintenance.index', compact('logs', 'devices', 'statuses'));
+        return view('maintenance.index', compact('logs', 'devices', 'statuses', 'sort'));
     }
 
     public function create()
@@ -107,5 +108,46 @@ class MaintenanceLogController extends Controller
         $log->load(['device.room', 'statusBefore', 'statusAfter', 'performedBy']);
 
         return view('maintenance.show', compact('log'));
+    }
+    public function edit(MaintenanceLog $log)
+    {
+        $devices  = Device::with('status')->orderBy('name')->get();
+        $statuses = DeviceStatus::all();
+        $log->load(['device', 'statusBefore', 'statusAfter', 'performedBy']);
+
+        return view('maintenance.edit', compact('log', 'devices', 'statuses'));
+    }
+
+    public function update(Request $request, MaintenanceLog $log)
+    {
+        $request->validate([
+            'performed_by_name' => 'required|string|max:255',
+            'date'              => 'required|date',
+            'deadline'          => 'nullable|date|after_or_equal:date',
+            'description'       => 'required|string',
+            'status_before_id'  => 'required|exists:device_statuses,id',
+            'status_after_id'   => 'required|exists:device_statuses,id',
+        ]);
+
+        $user = User::firstOrCreate(
+            ['username' => $request->performed_by_name],
+            ['password' => bcrypt('password'), 'access_type' => 'staff']
+        );
+
+        $log->update([
+            'performed_by'     => $user->id,
+            'date'             => $request->date,
+            'deadline'         => $request->deadline,
+            'description'      => $request->description,
+            'status_before_id' => $request->status_before_id,
+            'status_after_id'  => $request->status_after_id,
+        ]);
+
+        // Update device status to match status_after
+        $log->device->status_id = $request->status_after_id;
+        $log->device->save();
+
+        return redirect()->route('maintenance.index')
+                        ->with('success', 'Maintenance log updated successfully.');
     }
 }

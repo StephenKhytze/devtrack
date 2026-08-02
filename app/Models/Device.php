@@ -11,6 +11,7 @@ class Device extends Model
         'type',
         'model_num',
         'serial_number',
+        'inventory_number',
         'specs',
         'sub_parts',
         'status_id',

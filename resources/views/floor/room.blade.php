@@ -8,49 +8,79 @@
         ← Back to floor layout
     </a>
     <span class="text-base font-medium text-gray-800">{{ $room->name }}</span>
+
+    @if (auth()->user()->access_type === 'admin')
+        <button onclick="toggleDeviceEditMode()"
+                id="device-edit-mode-btn"
+                class="ml-auto px-4 py-2 text-base font-medium border border-gray-300 text-gray-600 rounded-md hover:bg-gray-100 transition">
+            Edit devices
+        </button>
+    @endif
 @endsection
 
 @section('content')
 <div class="mt-4 flex gap-6">
 
     {{-- Room image / layout --}}
-    <div class="flex-1 border-2 border-green-700 rounded-xl overflow-hidden relative"
-         style="aspect-ratio: 1420 / 651;">
+    <div class="flex-1">
+        <div id="room-map-wrapper"
+             class="border-2 border-green-700 rounded-xl overflow-hidden relative"
+             style="aspect-ratio: 1961 / 900;">
 
-        @if ($room->image)
-            <img src="{{ asset('images/rooms/' . $room->image) }}"
-                 class="absolute inset-0 w-full h-full object-contain"
-                 alt="{{ $room->name }} layout">
-        @else
-            <div class="absolute inset-0 flex items-center justify-center text-gray-300 text-base">
-                No room layout image available.
-            </div>
-        @endif
+            @if ($room->image)
+                <img id="room-map-img"
+                     src="{{ asset('images/rooms/' . $room->image) }}"
+                     draggable="false"
+                     class="absolute inset-0 w-full h-full object-contain select-none"
+                     alt="{{ $room->name }} layout">
+            @else
+                <div class="absolute inset-0 flex items-center justify-center text-gray-300 text-base">
+                    No room layout image available.
+                </div>
+            @endif
 
-        {{-- Device circles --}}
-        @foreach ($room->devices as $device)
-            <div class="absolute flex flex-col items-center gap-1 cursor-pointer group"
-                 style="left: {{ $device->pos_x }}%; top: {{ $device->pos_y }}%;"
-                 onclick="openModal({{ $device->id }})">
+            {{-- Device circles --}}
+            @foreach ($room->devices as $device)
+                <div class="room-device absolute flex flex-col items-center gap-1 cursor-pointer group"
+                     data-id="{{ $device->id }}"
+                     data-pos-x="{{ $device->pos_x }}"
+                     data-pos-y="{{ $device->pos_y }}"
+                     style="left: {{ $device->pos_x }}%; top: {{ $device->pos_y }}%; transform: translate(-50%, -50%);"
+                     onclick="handleDeviceClick({{ $device->id }})">
 
-                    <div class="w-5 h-5 rounded-full border-2 border-white transition group-hover:scale-125"
-                        style="background-color: {{
-                         match($device->status->color) {
-                             'green'  => '#16a34a',
-                             'orange' => '#facc15',
-                             'red'    => '#ef4444',
-                             default  => '#9ca3af'
-                         }
-                     }};"></div>
+                        <div class="w-5 h-5 rounded-full border-2 border-white transition group-hover:scale-125"
+                            style="background-color: {{
+                             match($device->status->color) {
+                                 'green'  => '#16a34a',
+                                 'orange' => '#facc15',
+                                 'red'    => '#ef4444',
+                                 default  => '#9ca3af'
+                             }
+                         }};"></div>
 
-                <span class="absolute -top-6 left-1/2 -translate-x-1/2 bg-white text-gray-800
-                             text-sm px-2 py-0.5 rounded shadow opacity-0 group-hover:opacity-100
-                             transition whitespace-nowrap border border-gray-200">
-                    {{ $device->name }}
-                </span>
-            </div>
-        @endforeach
+                    <span class="absolute -top-6 left-1/2 -translate-x-1/2 bg-white text-gray-800
+                                 text-sm px-2 py-0.5 rounded shadow opacity-0 group-hover:opacity-100
+                                 transition whitespace-nowrap border border-gray-200">
+                        {{ $device->name }}
+                    </span>
+                </div>
+            @endforeach
 
+        </div>
+
+        {{-- Device edit mode action bar --}}
+        <div id="device-edit-action-bar" class="hidden mt-3 flex items-center gap-3">
+            <span class="text-base text-gray-500">Drag devices to reposition them.</span>
+            <button onclick="saveAllDevicePositions()"
+                    class="ml-auto px-4 py-2 text-base font-medium bg-green-700 text-white rounded-md hover:bg-green-800 transition">
+                Save changes
+            </button>
+            <button onclick="toggleDeviceEditMode()"
+                    class="px-4 py-2 text-base font-medium border border-gray-300 text-gray-500 rounded-md hover:bg-gray-100 transition">
+                Done editing
+            </button>
+            <span id="device-save-status" class="text-base text-gray-400"></span>
+        </div>
     </div>
 
     {{-- Device list panel --}}
@@ -69,9 +99,10 @@
         <div class="flex flex-col divide-y divide-gray-100" id="device-list">
             @forelse ($room->devices as $device)
                 <div class="device-row py-2 flex justify-between items-center cursor-pointer hover:bg-gray-50 px-1 rounded"
-                     onclick="openModal({{ $device->id }})">
+                     data-id="{{ $device->id }}"
+                     onclick="handleDeviceClick({{ $device->id }})">
                     <span class="text-base text-gray-800 device-name">{{ $device->name }}</span>
-                    <span class="text-sm font-medium"
+                    <span class="text-sm font-medium device-status-label"
                           style="color: {{
                               match($device->status->color) {
                                   'green'  => '#15803d',
@@ -92,6 +123,87 @@
            class="mt-auto w-full text-center px-4 py-2 text-base font-medium border border-gray-300 rounded-md hover:bg-gray-100 transition">
             View full device list
         </a>
+    </div>
+
+    {{-- Edit Device panel — opened via device click (in edit mode) or the view modal's Edit button --}}
+    <div id="device-panel-column" class="hidden w-72 flex-col gap-4 self-start">
+        <div id="device-edit-panel"
+             class="bg-white border border-gray-200 rounded-xl p-4 flex flex-col gap-4">
+
+            <div class="flex items-center justify-between">
+                <p class="text-base font-medium text-gray-700">Edit device</p>
+                <button onclick="closeDeviceEditPanel()"
+                        class="text-gray-400 hover:text-gray-600 text-lg leading-none">✕</button>
+            </div>
+
+            <div id="device-panel-error" class="hidden text-base text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2"></div>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-sm font-medium text-gray-500">Name</label>
+                <input type="text" id="device-panel-name"
+                       class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-sm font-medium text-gray-500">Type</label>
+                <select id="device-panel-type"
+                        class="text-base border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-green-700">
+                    <option value="desktop">Desktop</option>
+                    <option value="laptop">Laptop</option>
+                    <option value="printer">Printer</option>
+                    <option value="photocopier">Photocopier</option>
+                    <option value="telephone">Telephone</option>
+                    <option value="aircon">Aircon</option>
+                    <option value="appliance">Appliance</option>
+                    <option value="network">Network</option>
+                    <option value="monitor">Monitor</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-sm font-medium text-gray-500">Status</label>
+                <select id="device-panel-status"
+                        class="text-base border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-green-700">
+                    @foreach ($statuses as $status)
+                        <option value="{{ $status->id }}">{{ $status->label }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-sm font-medium text-gray-500">Model number</label>
+                <input type="text" id="device-panel-model"
+                       class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-sm font-medium text-gray-500">Serial number</label>
+                <input type="text" id="device-panel-serial"
+                       class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-sm font-medium text-gray-500">Inventory number</label>
+                <input type="text" id="device-panel-inventory"
+                       class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-sm font-medium text-gray-500">Specs</label>
+                <textarea id="device-panel-specs" rows="3"
+                          class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700"></textarea>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button onclick="saveDeviceEdit()"
+                        class="flex-1 px-4 py-2 text-base font-medium bg-green-700 text-white rounded-md hover:bg-green-800 transition">
+                    Save
+                </button>
+                <span id="device-panel-status-msg" class="text-base text-gray-400"></span>
+            </div>
+
+        </div>
     </div>
 
 </div>
@@ -133,6 +245,10 @@
                 <span id="modal-serial" class="text-base text-gray-700"></span>
             </div>
             <div class="flex gap-2">
+            <span class="text-base text-gray-400 w-28 shrink-0">Inventory no.</span>
+                <span id="modal-inventory" class="text-base text-gray-700"></span>
+            </div>
+            <div class="flex gap-2">
                 <span class="text-base text-gray-400 w-28 shrink-0">Model</span>
                 <span id="modal-model" class="text-base text-gray-700"></span>
             </div>
@@ -154,10 +270,13 @@
 
         {{-- Footer --}}
         <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-2">
-            <a id="modal-edit-link" href="#"
-               class="px-4 py-2 text-base font-medium border border-gray-300 rounded-md hover:bg-gray-100 transition">
-                Edit device
-            </a>
+            @if (auth()->user()->access_type === 'admin')
+                <button id="modal-edit-btn"
+                        onclick="editDeviceFromModal()"
+                        class="px-4 py-2 text-base font-medium border border-gray-300 rounded-md hover:bg-gray-100 transition">
+                    Edit device
+                </button>
+            @endif
             <button onclick="closeModalDirect()"
                     class="px-4 py-2 text-base font-medium bg-green-700 text-white rounded-md hover:bg-green-800 transition">
                 Close
@@ -167,10 +286,21 @@
     </div>
 </div>
 
+<style>
+    body.dragging { cursor: grabbing !important; user-select: none; }
+    body.device-edit-active .room-device { cursor: grab; }
+    body.device-edit-active .room-device > div:first-child {
+        outline: 2px solid #2563eb;
+        outline-offset: 2px;
+    }
+</style>
+
 {{-- Device data passed to JS --}}
 <script>
-    const devices = @json($room->devices->load('status', 'room', 'parts.status'));
-    const editBaseUrl = "{{ url('/devices') }}";
+    const devices           = @json($room->devices->load('status', 'room', 'parts.status'));
+    const editBaseUrl       = "{{ url('/devices') }}";
+    const devicePositionBase = "{{ url('/devices') }}";
+    const csrfToken         = "{{ csrf_token() }}";
 
     const statusColors = {
         green:  { bg: '#dcfce7', text: '#15803d' },
@@ -178,13 +308,311 @@
         red:    { bg: '#fee2e2', text: '#b91c1c' },
     };
 
+    let deviceEditMode  = false;
+    let deviceDragState = null;
+    let editingDeviceId = null;
+    let suppressNextDeviceClick = false;
+    const DRAG_THRESHOLD = 5;
+
+    // ── Device edit mode ─────────────────────────────────────
+
+    function toggleDeviceEditMode() {
+        deviceEditMode = !deviceEditMode;
+        const btn = document.getElementById('device-edit-mode-btn');
+        const bar = document.getElementById('device-edit-action-bar');
+
+        if (deviceEditMode) {
+            btn.textContent = 'Exit edit mode';
+            btn.classList.add('bg-blue-50', 'border-blue-400', 'text-blue-700');
+            bar.classList.remove('hidden');
+            document.body.classList.add('device-edit-active');
+        } else {
+            btn.textContent = 'Edit devices';
+            btn.classList.remove('bg-blue-50', 'border-blue-400', 'text-blue-700');
+            bar.classList.add('hidden');
+            document.body.classList.remove('device-edit-active');
+        }
+    }
+
+    function handleDeviceClick(deviceId) {
+        if (suppressNextDeviceClick) {
+            suppressNextDeviceClick = false;
+            return; // this click was the tail end of a drag — ignore it
+        }
+        if (deviceEditMode) {
+            openDeviceEditPanel(deviceId);
+            return;
+        }
+        openModal(deviceId);
+    }
+
+    function editDeviceFromModal() {
+        if (currentModalDeviceId === null) return;
+        closeModalDirect();
+        openDeviceEditPanel(currentModalDeviceId);
+    }
+
+    function openDeviceEditPanel(deviceId) {
+        const device = devices.find(d => d.id === deviceId);
+        if (!device) return;
+
+        document.getElementById('device-panel-error').classList.add('hidden');
+        document.getElementById('device-panel-status-msg').textContent = '';
+
+        editingDeviceId = deviceId;
+
+        document.getElementById('device-panel-name').value      = device.name;
+        document.getElementById('device-panel-type').value      = device.type;
+        document.getElementById('device-panel-status').value    = device.status?.id ?? '';
+        document.getElementById('device-panel-model').value     = device.model_num || '';
+        document.getElementById('device-panel-serial').value    = device.serial_number || '';
+        document.getElementById('device-panel-inventory').value = device.inventory_number || '';
+        document.getElementById('device-panel-specs').value     = device.specs || '';
+
+        document.getElementById('device-panel-column').classList.remove('hidden');
+        document.getElementById('device-panel-column').classList.add('flex');
+    }
+
+    function closeDeviceEditPanel() {
+        editingDeviceId = null;
+        document.getElementById('device-panel-column').classList.add('hidden');
+        document.getElementById('device-panel-column').classList.remove('flex');
+    }
+
+    async function saveDeviceEdit() {
+        if (editingDeviceId === null) return;
+
+        const errorBox  = document.getElementById('device-panel-error');
+        const statusMsg = document.getElementById('device-panel-status-msg');
+        errorBox.classList.add('hidden');
+        statusMsg.textContent = 'Saving...';
+
+        const name = document.getElementById('device-panel-name').value.trim();
+        if (!name) {
+            statusMsg.textContent = '';
+            errorBox.textContent = 'Name is required.';
+            errorBox.classList.remove('hidden');
+            return;
+        }
+
+        const payload = {
+            _method:          'PUT',
+            name:             name,
+            type:             document.getElementById('device-panel-type').value,
+            status_id:        document.getElementById('device-panel-status').value,
+            model_num:        document.getElementById('device-panel-model').value,
+            serial_number:    document.getElementById('device-panel-serial').value,
+            inventory_number: document.getElementById('device-panel-inventory').value,
+            specs:            document.getElementById('device-panel-specs').value,
+        };
+
+        const res = await fetch(`${devicePositionBase}/${editingDeviceId}/quick-update`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            statusMsg.textContent = '';
+            if (data.errors) {
+                errorBox.textContent = Object.values(data.errors)[0][0];
+            } else {
+                errorBox.textContent = data.error || 'Something went wrong.';
+            }
+            errorBox.classList.remove('hidden');
+            return;
+        }
+
+        // Update in-memory devices array so modal/list reflect changes without reload
+        const idx = devices.findIndex(d => d.id === editingDeviceId);
+        if (idx !== -1) {
+            devices[idx] = { ...devices[idx], ...data };
+        }
+
+        // Update the map dot color + tooltip
+        const el = document.querySelector(`.room-device[data-id="${editingDeviceId}"]`);
+        if (el) {
+            const colorMap = { green: '#16a34a', orange: '#facc15', red: '#ef4444' };
+            const dot = el.querySelector('div');
+            if (dot) dot.style.backgroundColor = colorMap[data.status.color] || '#9ca3af';
+            const label = el.querySelector('span');
+            if (label) label.textContent = data.name;
+        }
+
+        // Update the side-panel device list row (name + status text/color)
+        const row = document.querySelector(`.device-row[data-id="${editingDeviceId}"]`);
+        if (row) {
+            const textColorMap = { green: '#15803d', orange: '#a16207', red: '#b91c1c' };
+            const nameEl = row.querySelector('.device-name');
+            if (nameEl) nameEl.textContent = data.name;
+            const statusEl = row.querySelector('.device-status-label');
+            if (statusEl) {
+                statusEl.textContent = data.status.label;
+                statusEl.style.color = textColorMap[data.status.color] || '#6b7280';
+            }
+        }
+
+        statusMsg.textContent = 'Saved ✓';
+        setTimeout(() => statusMsg.textContent = '', 3000);
+    }
+
+    async function saveAllDevicePositions() {
+        const status = document.getElementById('device-save-status');
+        status.textContent = 'Saving...';
+
+        const elements = document.querySelectorAll('.room-device');
+        const promises = Array.from(elements).map(async el => {
+            const id = el.dataset.id;
+            const res = await fetch(`${devicePositionBase}/${id}/position`, {
+                method:  'PATCH',
+                headers: {
+                    'Content-Type':  'application/json',
+                    'X-CSRF-TOKEN':  csrfToken,
+                    'Accept':        'application/json',
+                },
+                body: JSON.stringify({
+                    pos_x: el.dataset.posX,
+                    pos_y: el.dataset.posY,
+                }),
+            });
+            return res.json();
+        });
+
+        await Promise.all(promises);
+        status.textContent = 'Saved ✓';
+        setTimeout(() => status.textContent = '', 3000);
+    }
+
+    // ── Positioning (object-contain aware, mirrors floor layout) ──
+
+    function positionDevicesInRoom() {
+        const wrapper = document.getElementById('room-map-wrapper');
+        const img     = document.getElementById('room-map-img');
+        if (!img) return; // no room image uploaded — leave devices at default static position
+
+        const cRect = wrapper.getBoundingClientRect();
+        const cW = cRect.width;
+        const cH = cRect.height;
+        const iW = img.naturalWidth;
+        const iH = img.naturalHeight;
+
+        if (!iW || !iH) return;
+
+        const scale     = Math.min(cW / iW, cH / iH);
+        const renderedW = iW * scale;
+        const renderedH = iH * scale;
+        const offsetX   = (cW - renderedW) / 2;
+        const offsetY   = (cH - renderedH) / 2;
+
+        document.querySelectorAll('.room-device').forEach(el => {
+            const x = parseFloat(el.dataset.posX);
+            const y = parseFloat(el.dataset.posY);
+
+            const pixelX = offsetX + (x / 100) * renderedW;
+            const pixelY = offsetY + (y / 100) * renderedH;
+
+            el.style.left      = pixelX + 'px';
+            el.style.top       = pixelY + 'px';
+            el.style.transform = 'translate(-50%, -50%)';
+        });
+    }
+
+    const roomMapImg = document.getElementById('room-map-img');
+    function initializeRoomMap() {
+        requestAnimationFrame(() => {
+            positionDevicesInRoom();
+        });
+    }
+
+    if (roomMapImg) {
+        if (roomMapImg.complete) {
+            initializeRoomMap();
+        } else {
+            roomMapImg.addEventListener('load', initializeRoomMap);
+        }
+    }
+
+    const roomMapWrapper = document.getElementById('room-map-wrapper');
+    new ResizeObserver(() => {
+        positionDevicesInRoom();
+    }).observe(roomMapWrapper);
+
+    window.addEventListener('resize', positionDevicesInRoom);
+
+    // ── Drag to move ─────────────────────────────────────────
+
+    document.addEventListener('mousedown', e => {
+        if (!deviceEditMode) return;
+
+        const deviceEl = e.target.closest('.room-device');
+        if (!deviceEl) return;
+
+        const wrapper = document.getElementById('room-map-wrapper');
+        const rect    = wrapper.getBoundingClientRect();
+
+        deviceDragState = {
+            el:        deviceEl,
+            startX:    e.clientX,
+            startY:    e.clientY,
+            startPosX: parseFloat(deviceEl.dataset.posX),
+            startPosY: parseFloat(deviceEl.dataset.posY),
+            wrapW:     rect.width,
+            wrapH:     rect.height,
+            started:   false,
+        };
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', e => {
+        if (!deviceDragState) return;
+
+        const dx = e.clientX - deviceDragState.startX;
+        const dy = e.clientY - deviceDragState.startY;
+
+        if (!deviceDragState.started) {
+            if (Math.abs(dx) < DRAG_THRESHOLD && Math.abs(dy) < DRAG_THRESHOLD) return;
+            deviceDragState.started = true;
+            document.body.classList.add('dragging');
+        }
+
+        const newX = Math.max(0, Math.min(100,
+            deviceDragState.startPosX + (dx / deviceDragState.wrapW) * 100));
+        const newY = Math.max(0, Math.min(100,
+            deviceDragState.startPosY + (dy / deviceDragState.wrapH) * 100));
+
+        deviceDragState.el.dataset.posX = newX;
+        deviceDragState.el.dataset.posY = newY;
+        positionDevicesInRoom();
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (deviceDragState && deviceDragState.started) {
+            suppressNextDeviceClick = true;
+        }
+        deviceDragState = null;
+        document.body.classList.remove('dragging');
+    });
+
+    // ── Device modal ─────────────────────────────────────────
+
+    let currentModalDeviceId = null;
+
     function openModal(deviceId) {
         const device = devices.find(d => d.id === deviceId);
         if (!device) return;
 
+        currentModalDeviceId = deviceId;
+
         document.getElementById('modal-name').textContent  = device.name;
         document.getElementById('modal-type').textContent  = device.type;
         document.getElementById('modal-serial').textContent = device.serial_number || '—';
+        document.getElementById('modal-inventory').textContent = device.inventory_number || '—';
         document.getElementById('modal-model').textContent = device.model_num || '—';
         document.getElementById('modal-specs').textContent = device.specs    || '—';
         document.getElementById('modal-room').textContent  = device.room ? device.room.name : 'Standalone';
@@ -195,8 +623,6 @@
         badge.textContent         = device.status?.label || '—';
         badge.style.background    = colors.bg;
         badge.style.color         = colors.text;
-
-        document.getElementById('modal-edit-link').href = `${editBaseUrl}/${device.id}/edit`;
 
         const partsSection = document.getElementById('modal-parts-section');
         const partsList    = document.getElementById('modal-parts');

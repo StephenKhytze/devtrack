@@ -64,7 +64,7 @@
     {{-- Flash messages --}}
     @if (session('success'))
         <div id="flash-success"
-            class="mx-6 mt-4 px-4 py-3 bg-green-50 border border-green-200 text-green-700 rounded-lg text-base flex items-center justify-between">
+            class="mt-4 px-4 py-3 bg-green-50 border border-green-200 text-green-700 rounded-lg text-base flex items-center justify-between">
             <span>{{ session('success') }}</span>
             <button onclick="this.parentElement.remove()"
                     class="text-green-500 hover:text-green-700 ml-4">✕</button>
@@ -79,7 +79,7 @@
 
     @if (session('error'))
         <div id="flash-error"
-            class="mx-6 mt-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-base flex items-center justify-between">
+            class="mt-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-base flex items-center justify-between">
             <span>{{ session('error') }}</span>
             <button onclick="this.parentElement.remove()"
                     class="text-red-500 hover:text-red-700 ml-4">✕</button>

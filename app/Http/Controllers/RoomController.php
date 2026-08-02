@@ -4,14 +4,27 @@ namespace App\Http\Controllers;
 
 use App\Models\Room;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class RoomController extends Controller
 {
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
+            'name'  => 'required|string|max:255',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120|dimensions:ratio=1961/900',
+        ], [
+            'image.dimensions' => 'Image must match the required aspect ratio (1961:900, e.g. 1961x900px or 1310x600px).',
+            'image.max'        => 'Image must not be larger than 5MB.',
         ]);
+
+        $filename = null;
+
+        if ($request->hasFile('image')) {
+            $file     = $request->file('image');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $file->move(public_path('images/rooms'), $filename);
+        }
 
         $room = Room::create([
             'name'   => $request->name,
@@ -19,7 +32,7 @@ class RoomController extends Controller
             'pos_y'  => 40,
             'width'  => 15,
             'height' => 15,
-            'image'  => null,
+            'image'  => $filename,
         ]);
 
         return response()->json($room);
@@ -27,6 +40,7 @@ class RoomController extends Controller
 
     public function update(Request $request, Room $room)
     {
+        Log::info($request->all());
         $request->validate([
             'name'   => 'nullable|string|max:255',
             'pos_x'  => 'nullable|numeric',

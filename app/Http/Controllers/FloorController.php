@@ -24,7 +24,9 @@ class FloorController extends Controller
             'oos'         => Device::whereHas('status', fn($q) => $q->where('color', 'red'))->count(),
         ];
 
-        return view('floor', compact('rooms', 'counts', 'standaloneDevices'));
+        $statuses = DeviceStatus::all();
+
+        return view('floor', compact('rooms', 'counts', 'standaloneDevices', 'statuses'));
     }
     public function room(Room $room)
     {
@@ -32,6 +34,8 @@ class FloorController extends Controller
             $query->with(['status', 'parts.status']);
         }]);
 
-        return view('floor.room', compact('room'));
+        $statuses = DeviceStatus::all();
+
+        return view('floor.room', compact('room', 'statuses'));
     }
 }

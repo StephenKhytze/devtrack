@@ -19,11 +19,18 @@
     </div>
 
     @if (auth()->user()->access_type === 'admin')
-        <button onclick="toggleEditMode()"
-                id="edit-mode-btn"
-                class="ml-auto px-4 py-2 text-base font-medium border border-gray-300 text-gray-600 rounded-md hover:bg-gray-100 transition">
-            Edit rooms
-        </button>
+        <div class="ml-auto flex items-center gap-2">
+            <button onclick="toggleDeviceEditMode()"
+                    id="device-edit-mode-btn"
+                    class="px-4 py-2 text-base font-medium border border-gray-300 text-gray-600 rounded-md hover:bg-gray-100 transition">
+                Edit devices
+            </button>
+            <button onclick="toggleEditMode()"
+                    id="edit-mode-btn"
+                    class="px-4 py-2 text-base font-medium border border-gray-300 text-gray-600 rounded-md hover:bg-gray-100 transition">
+                Edit rooms
+            </button>
+        </div>
     @endif
 @endsection
 
@@ -34,7 +41,7 @@
     <div class="flex-1">
         <div id="map-wrapper"
              class="relative w-full border-2 border-green-700"
-             style="aspect-ratio: 1420 / 651;">
+             style="aspect-ratio: 2307 / 1559;">
 
             <img src="{{ asset('images/map.png') }}"
                  draggable="false"
@@ -51,11 +58,7 @@
                      data-width="{{ $room->width }}"
                      data-height="{{ $room->height }}"
                      data-image="{{ $room->image ? asset('images/rooms/' . $room->image) : '' }}"
-                     style="
-                         left: {{ $room->pos_x }}%;
-                         top: {{ $room->pos_y }}%;
-                         width: {{ $room->width }}%;
-                         height: {{ $room->height }}%;">
+                     style="left: {{ $room->pos_x }}%; top: {{ $room->pos_y }}%; width: {{ $room->width }}%; height: {{ $room->height }}%;">
 
                     {{-- View mode content --}}
                     <a href="{{ route('floor.room', $room->id) }}"
@@ -66,15 +69,17 @@
                         @if ($room->devices->isNotEmpty())
                             <div class="flex flex-wrap justify-center gap-1">
                                 @foreach ($room->devices as $device)
-                                    <span class="w-2 h-2 rounded-full inline-block"
-                                          style="background-color: {{
-                                              match($device->status->color) {
-                                                  'green'  => '#16a34a',
-                                                  'orange' => '#facc15',
-                                                  'red'    => '#ef4444',
-                                                  default  => '#9ca3af'
-                                              }
-                                          }};"></span>
+                                    <span class="room-dot w-2 h-2 rounded-full inline-block"
+                                        data-pos-x="{{ $device->pos_x }}"
+                                        data-pos-y="{{ $device->pos_y }}"
+                                        style="background-color: {{
+                                            match($device->status->color) {
+                                                'green'  => '#16a34a',
+                                                'orange' => '#facc15',
+                                                'red'    => '#ef4444',
+                                                default  => '#9ca3af'
+                                            }
+                                        }};"></span>
                                 @endforeach
                             </div>
                         @endif
@@ -106,21 +111,24 @@
 
             {{-- Standalone devices --}}
             @foreach ($standaloneDevices as $device)
-                <div class="absolute flex flex-col items-center gap-1 cursor-pointer group"
-                     style="left: {{ $device->pos_x }}%; top: {{ $device->pos_y }}%;"
-                     onclick="openModal({{ $device->id }})">
+                <div class="standalone-device absolute flex flex-col items-center gap-1 cursor-pointer group"
+                    data-id="{{ $device->id }}"
+                    data-pos-x="{{ $device->pos_x }}"
+                    data-pos-y="{{ $device->pos_y }}"
+                    style="left: {{ $device->pos_x }}%; top: {{ $device->pos_y }}%; transform: translate(-50%, -50%);"
+                    onclick="handleStandaloneClick({{ $device->id }})">
                     <div class="w-5 h-5 rounded-full border-2 border-white transition group-hover:scale-125"
                         style="background-color: {{
-                             match($device->status->color) {
-                                 'green'  => '#16a34a',
-                                 'orange' => '#facc15',
-                                 'red'    => '#ef4444',
-                                 default  => '#9ca3af'
-                             }
-                         }};"></div>
+                            match($device->status->color) {
+                                'green'  => '#16a34a',
+                                'orange' => '#facc15',
+                                'red'    => '#ef4444',
+                                default  => '#9ca3af'
+                            }
+                        }};"></div>
                     <span class="absolute -top-6 left-1/2 -translate-x-1/2 bg-white text-gray-800
-                                 text-sm px-2 py-0.5 rounded shadow opacity-0 group-hover:opacity-100
-                                 transition whitespace-nowrap border border-gray-200">
+                                text-sm px-2 py-0.5 rounded shadow opacity-0 group-hover:opacity-100
+                                transition whitespace-nowrap border border-gray-200">
                         {{ $device->name }}
                     </span>
                 </div>
@@ -130,10 +138,6 @@
 
         {{-- Edit mode action bar --}}
         <div id="edit-action-bar" class="hidden mt-3 flex items-center gap-3">
-            <button onclick="addRoom()"
-                    class="px-4 py-2 text-base font-medium border border-green-700 text-green-700 rounded-md hover:bg-green-50 transition">
-                + Add room
-            </button>
             <button onclick="saveAllRooms()"
                     class="px-4 py-2 text-base font-medium bg-green-700 text-white rounded-md hover:bg-green-800 transition">
                 Save changes
@@ -144,69 +148,217 @@
             </button>
             <span id="save-status" class="text-base text-gray-400"></span>
         </div>
+
+        {{-- Device edit mode action bar --}}
+        <div id="device-edit-action-bar" class="hidden mt-3 flex items-center gap-3">
+            <span class="text-base text-gray-500">Drag devices to reposition them.</span>
+            <button onclick="saveAllDevicePositions()"
+                    class="ml-auto px-4 py-2 text-base font-medium bg-green-700 text-white rounded-md hover:bg-green-800 transition">
+                Save changes
+            </button>
+            <button onclick="toggleDeviceEditMode()"
+                    class="px-4 py-2 text-base font-medium border border-gray-300 text-gray-500 rounded-md hover:bg-gray-100 transition">
+                Done editing
+            </button>
+            <span id="device-save-status" class="text-base text-gray-400"></span>
+        </div>
     </div>
 
-    {{-- Room edit panel (hidden by default) --}}
-    <div id="room-edit-panel"
-         class="hidden w-72 bg-white border border-gray-200 rounded-xl p-4 flex flex-col gap-4 self-start">
+    {{-- Room edit panel + Add room button, stacked in one column --}}
+    <div id="room-panel-column" class="hidden w-72 flex-col gap-4 self-start">
 
-        <div class="flex items-center justify-between">
-            <p class="text-base font-medium text-gray-700">Edit room</p>
-            <button onclick="closeRoomPanel()"
-                    class="text-gray-400 hover:text-gray-600 text-lg leading-none">✕</button>
-        </div>
+        <div id="room-edit-panel"
+             class="hidden bg-white border border-gray-200 rounded-xl p-4 flex flex-col gap-4">
 
-        <div class="flex flex-col gap-1">
-            <label class="text-sm font-medium text-gray-500">Room name</label>
-            <input type="text" id="panel-name"
-                   class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
-        </div>
+            <div class="flex items-center justify-between">
+                <p class="text-base font-medium text-gray-700">Edit room</p>
+                <button onclick="closeRoomPanel()"
+                        class="text-gray-400 hover:text-gray-600 text-lg leading-none">✕</button>
+            </div>
 
-        <div class="grid grid-cols-2 gap-2">
             <div class="flex flex-col gap-1">
-                <label class="text-sm font-medium text-gray-500">X (%)</label>
-                <input type="number" id="panel-pos-x" step="0.001"
-                       oninput="syncRoomFromPanel()"
+                <label class="text-sm font-medium text-gray-500">Room name</label>
+                <input type="text" id="panel-name"
                        class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
             </div>
-            <div class="flex flex-col gap-1">
-                <label class="text-sm font-medium text-gray-500">Y (%)</label>
-                <input type="number" id="panel-pos-y" step="0.001"
-                       oninput="syncRoomFromPanel()"
-                       class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
+
+            <div class="grid grid-cols-2 gap-2">
+                <div class="flex flex-col gap-1">
+                    <label class="text-sm font-medium text-gray-500">X (%)</label>
+                    <input type="number" id="panel-pos-x" step="0.001"
+                           oninput="syncRoomFromPanel()"
+                           class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="text-sm font-medium text-gray-500">Y (%)</label>
+                    <input type="number" id="panel-pos-y" step="0.001"
+                           oninput="syncRoomFromPanel()"
+                           class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="text-sm font-medium text-gray-500">Width (%)</label>
+                    <input type="number" id="panel-width" step="0.001"
+                           oninput="syncRoomFromPanel()"
+                           class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="text-sm font-medium text-gray-500">Height (%)</label>
+                    <input type="number" id="panel-height" step="0.001"
+                           oninput="syncRoomFromPanel()"
+                           class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
+                </div>
             </div>
+
             <div class="flex flex-col gap-1">
-                <label class="text-sm font-medium text-gray-500">Width (%)</label>
-                <input type="number" id="panel-width" step="0.001"
-                       oninput="syncRoomFromPanel()"
-                       class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
+                <label class="text-sm font-medium text-gray-500">Room image</label>
+                <input type="file" id="panel-image" accept="image/*"
+                       class="text-base text-gray-600">
+                <div id="panel-image-preview" class="hidden mt-2">
+                    <img id="panel-image-img" src="" alt="Room image"
+                         class="w-full rounded-md border border-gray-200 object-contain"
+                         style="max-height: 120px;">
+                </div>
             </div>
-            <div class="flex flex-col gap-1">
-                <label class="text-sm font-medium text-gray-500">Height (%)</label>
-                <input type="number" id="panel-height" step="0.001"
-                       oninput="syncRoomFromPanel()"
-                       class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
-            </div>
+
+            <button onclick="deleteRoom()"
+                    class="px-4 py-2 text-base font-medium border border-red-300 text-red-600 rounded-md hover:bg-red-50 transition">
+                Delete room
+            </button>
+
         </div>
 
-        <div class="flex flex-col gap-1">
-            <label class="text-sm font-medium text-gray-500">Room image</label>
-            <input type="file" id="panel-image" accept="image/*"
-                   class="text-base text-gray-600">
-            <div id="panel-image-preview" class="hidden mt-2">
-                <img id="panel-image-img" src="" alt="Room image"
-                     class="w-full rounded-md border border-gray-200 object-contain"
-                     style="max-height: 120px;">
-            </div>
-        </div>
-
-        <button onclick="deleteRoom()"
-                class="px-4 py-2 text-base font-medium border border-red-300 text-red-600 rounded-md hover:bg-red-50 transition">
-            Delete room
+        {{-- Add room button, only visible in edit mode, stacked below the panel --}}
+        <button id="add-room-btn"
+                onclick="openAddRoomModal()"
+                class="hidden px-4 py-2 text-base font-medium border border-green-700 text-green-700 rounded-md hover:bg-green-50 transition">
+            + Add room
         </button>
 
     </div>
 
+    {{-- Edit Device panel — independent of room editing, opened via device click or the view modal's Edit button --}}
+    <div id="device-panel-column" class="hidden w-72 flex-col gap-4 self-start">
+        <div id="device-edit-panel"
+             class="bg-white border border-gray-200 rounded-xl p-4 flex flex-col gap-4">
+
+            <div class="flex items-center justify-between">
+                <p class="text-base font-medium text-gray-700">Edit device</p>
+                <button onclick="closeDeviceEditPanel()"
+                        class="text-gray-400 hover:text-gray-600 text-lg leading-none">✕</button>
+            </div>
+
+            <div id="device-panel-error" class="hidden text-base text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2"></div>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-sm font-medium text-gray-500">Name</label>
+                <input type="text" id="device-panel-name"
+                       class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-sm font-medium text-gray-500">Type</label>
+                <select id="device-panel-type"
+                        class="text-base border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-green-700">
+                    <option value="desktop">Desktop</option>
+                    <option value="laptop">Laptop</option>
+                    <option value="printer">Printer</option>
+                    <option value="photocopier">Photocopier</option>
+                    <option value="telephone">Telephone</option>
+                    <option value="aircon">Aircon</option>
+                    <option value="appliance">Appliance</option>
+                    <option value="network">Network</option>
+                    <option value="monitor">Monitor</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-sm font-medium text-gray-500">Status</label>
+                <select id="device-panel-status"
+                        class="text-base border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-green-700">
+                    @foreach ($statuses as $status)
+                        <option value="{{ $status->id }}">{{ $status->label }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-sm font-medium text-gray-500">Model number</label>
+                <input type="text" id="device-panel-model"
+                       class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-sm font-medium text-gray-500">Serial number</label>
+                <input type="text" id="device-panel-serial"
+                       class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-sm font-medium text-gray-500">Inventory number</label>
+                <input type="text" id="device-panel-inventory"
+                       class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-sm font-medium text-gray-500">Specs</label>
+                <textarea id="device-panel-specs" rows="3"
+                          class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700"></textarea>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button onclick="saveDeviceEdit()"
+                        class="flex-1 px-4 py-2 text-base font-medium bg-green-700 text-white rounded-md hover:bg-green-800 transition">
+                    Save
+                </button>
+                <span id="device-panel-status-msg" class="text-base text-gray-400"></span>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+{{-- Add room modal --}}
+<div id="add-room-modal"
+     class="fixed inset-0 z-50 flex items-center justify-center hidden"
+     onclick="closeAddRoomModalOnBackdrop(event)">
+    <div class="absolute inset-0 bg-black/40"></div>
+    <div class="relative bg-white rounded-xl shadow-lg w-full max-w-md mx-4 z-10 overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+            <h3 class="text-base font-semibold text-gray-800">Add room</h3>
+            <button onclick="closeAddRoomModal()"
+                    class="text-gray-400 hover:text-gray-600 text-xl font-light leading-none">✕</button>
+        </div>
+        <div class="px-6 py-4 flex flex-col gap-4">
+            <div id="add-room-error" class="hidden text-base text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2"></div>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-sm font-medium text-gray-500">Room name</label>
+                <input type="text" id="add-room-name"
+                       class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-sm font-medium text-gray-500">Room image (optional)</label>
+                <input type="file" id="add-room-image" accept="image/*"
+                       class="text-base text-gray-600">
+                <p class="text-sm text-gray-400">
+                    Must match a 1961:900 aspect ratio (e.g. 1961×900px, 1307×600px). Max 5MB.
+                </p>
+            </div>
+        </div>
+        <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-2">
+            <button onclick="closeAddRoomModal()"
+                    class="px-4 py-2 text-base font-medium border border-gray-300 rounded-md hover:bg-gray-100 transition">
+                Cancel
+            </button>
+            <button onclick="submitAddRoom()"
+                    class="px-4 py-2 text-base font-medium bg-green-700 text-white rounded-md hover:bg-green-800 transition">
+                Add room
+            </button>
+        </div>
+    </div>
 </div>
 
 {{-- Device modal --}}
@@ -233,6 +385,10 @@
                 <span id="modal-serial" class="text-base text-gray-700"></span>
             </div>
             <div class="flex gap-2">
+                <span class="text-base text-gray-400 w-28 shrink-0">Inventory no.</span>
+                <span id="modal-inventory" class="text-base text-gray-700"></span>
+            </div>
+            <div class="flex gap-2">
                 <span class="text-base text-gray-400 w-28 shrink-0">Model</span>
                 <span id="modal-model" class="text-base text-gray-700"></span>
             </div>
@@ -250,10 +406,13 @@
             <div id="modal-parts" class="flex flex-col gap-1"></div>
         </div>
         <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-2">
-            <a id="modal-edit-link" href="#"
-               class="px-4 py-2 text-base font-medium border border-gray-300 rounded-md hover:bg-gray-100 transition">
-                Edit device
-            </a>
+            @if (auth()->user()->access_type === 'admin')
+                <button id="modal-edit-btn"
+                        onclick="editDeviceFromModal()"
+                        class="px-4 py-2 text-base font-medium border border-gray-300 rounded-md hover:bg-gray-100 transition">
+                    Edit device
+                </button>
+            @endif
             <button onclick="closeModalDirect()"
                     class="px-4 py-2 text-base font-medium bg-green-700 text-white rounded-md hover:bg-green-800 transition">
                 Close
@@ -282,6 +441,11 @@
     .handle-se { bottom: -5px; right: -5px; cursor: se-resize; }
     body.dragging { cursor: grabbing !important; user-select: none; }
     body.resizing { user-select: none; }
+    body.device-edit-active .standalone-device { cursor: grab; }
+    body.device-edit-active .standalone-device > div:first-child {
+        outline: 2px solid #2563eb;
+        outline-offset: 2px;
+    }
 </style>
 
 <script>
@@ -290,6 +454,7 @@
     const updateBase = "{{ url('/rooms') }}";
     const deleteBase = "{{ url('/rooms') }}";
     const editBaseUrl = "{{ url('/devices') }}";
+    const devicePositionBase = "{{ url('/devices') }}";
 
     const devices    = @json($standaloneDevices->load('status', 'parts.status'));
     const statusColors = {
@@ -298,24 +463,195 @@
         red:    { bg: '#fee2e2', text: '#b91c1c' },
     };
 
-    let editMode        = false;
-    let activeRoom      = null;
-    let dragState       = null;
-    let resizeState     = null;
+    let editMode         = false;
+    let deviceEditMode   = false;
+    let activeRoom       = null;
+    let dragState        = null;
+    let resizeState      = null;
+    let deviceDragState  = null;
+    let editingDeviceId  = null;
+    let suppressNextDeviceClick = false;
     const DRAG_THRESHOLD = 5;
+
+    // ── Device edit mode ─────────────────────────────────────
+
+    function toggleDeviceEditMode() {
+        deviceEditMode = !deviceEditMode;
+        const btn = document.getElementById('device-edit-mode-btn');
+        const bar = document.getElementById('device-edit-action-bar');
+
+        if (deviceEditMode) {
+            btn.textContent = 'Exit edit mode';
+            btn.classList.add('bg-blue-50', 'border-blue-400', 'text-blue-700');
+            bar.classList.remove('hidden');
+            document.body.classList.add('device-edit-active');
+        } else {
+            btn.textContent = 'Edit devices';
+            btn.classList.remove('bg-blue-50', 'border-blue-400', 'text-blue-700');
+            bar.classList.add('hidden');
+            document.body.classList.remove('device-edit-active');
+        }
+    }
+
+    function handleStandaloneClick(deviceId) {
+        if (suppressNextDeviceClick) {
+            suppressNextDeviceClick = false;
+            return; // this click was the tail end of a drag — ignore it
+        }
+        if (deviceEditMode) {
+            openDeviceEditPanel(deviceId);
+            return;
+        }
+        openModal(deviceId);
+    }
+
+    function editDeviceFromModal() {
+        if (currentModalDeviceId === null) return;
+        closeModalDirect();
+        openDeviceEditPanel(currentModalDeviceId);
+    }
+
+    function openDeviceEditPanel(deviceId) {
+        const device = devices.find(d => d.id === deviceId);
+        if (!device) return;
+
+        document.getElementById('device-panel-error').classList.add('hidden');
+        document.getElementById('device-panel-status-msg').textContent = '';
+
+        editingDeviceId = deviceId;
+
+        document.getElementById('device-panel-name').value      = device.name;
+        document.getElementById('device-panel-type').value      = device.type;
+        document.getElementById('device-panel-status').value    = device.status?.id ?? '';
+        document.getElementById('device-panel-model').value     = device.model_num || '';
+        document.getElementById('device-panel-serial').value    = device.serial_number || '';
+        document.getElementById('device-panel-inventory').value = device.inventory_number || '';
+        document.getElementById('device-panel-specs').value     = device.specs || '';
+
+        document.getElementById('device-panel-column').classList.remove('hidden');
+        document.getElementById('device-panel-column').classList.add('flex');
+    }
+
+    function closeDeviceEditPanel() {
+        editingDeviceId = null;
+        document.getElementById('device-panel-column').classList.add('hidden');
+        document.getElementById('device-panel-column').classList.remove('flex');
+    }
+
+    async function saveDeviceEdit() {
+        if (editingDeviceId === null) return;
+
+        const errorBox = document.getElementById('device-panel-error');
+        const statusMsg = document.getElementById('device-panel-status-msg');
+        errorBox.classList.add('hidden');
+        statusMsg.textContent = 'Saving...';
+
+        const name = document.getElementById('device-panel-name').value.trim();
+        if (!name) {
+            statusMsg.textContent = '';
+            errorBox.textContent = 'Name is required.';
+            errorBox.classList.remove('hidden');
+            return;
+        }
+
+        const payload = {
+            _method:           'PUT',
+            name:              name,
+            type:              document.getElementById('device-panel-type').value,
+            status_id:         document.getElementById('device-panel-status').value,
+            model_num:         document.getElementById('device-panel-model').value,
+            serial_number:     document.getElementById('device-panel-serial').value,
+            inventory_number:  document.getElementById('device-panel-inventory').value,
+            specs:             document.getElementById('device-panel-specs').value,
+        };
+
+        const res = await fetch(`${devicePositionBase}/${editingDeviceId}/quick-update`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            statusMsg.textContent = '';
+            if (data.errors) {
+                errorBox.textContent = Object.values(data.errors)[0][0];
+            } else {
+                errorBox.textContent = data.error || 'Something went wrong.';
+            }
+            errorBox.classList.remove('hidden');
+            return;
+        }
+
+        // Update the in-memory devices array so the modal/panel reflect changes without a reload
+        const idx = devices.findIndex(d => d.id === editingDeviceId);
+        if (idx !== -1) {
+            devices[idx] = { ...devices[idx], ...data };
+        }
+
+        // Update the dot color and tooltip label on the map
+        const el = document.querySelector(`.standalone-device[data-id="${editingDeviceId}"]`);
+        if (el) {
+            const colorMap = { green: '#16a34a', orange: '#facc15', red: '#ef4444' };
+            const dot = el.querySelector('div');
+            if (dot) dot.style.backgroundColor = colorMap[data.status.color] || '#9ca3af';
+            const label = el.querySelector('span');
+            if (label) label.textContent = data.name;
+        }
+
+        statusMsg.textContent = 'Saved ✓';
+        setTimeout(() => statusMsg.textContent = '', 3000);
+    }
+
+    async function saveAllDevicePositions() {
+        const status = document.getElementById('device-save-status');
+        status.textContent = 'Saving...';
+
+        const elements = document.querySelectorAll('.standalone-device');
+        const promises = Array.from(elements).map(async el => {
+            const id = el.dataset.id;
+            const res = await fetch(`${devicePositionBase}/${id}/position`, {
+                method:  'PATCH',
+                headers: {
+                    'Content-Type':  'application/json',
+                    'X-CSRF-TOKEN':  csrfToken,
+                    'Accept':        'application/json',
+                },
+                body: JSON.stringify({
+                    pos_x: el.dataset.posX,
+                    pos_y: el.dataset.posY,
+                }),
+            });
+            return res.json();
+        });
+
+        await Promise.all(promises);
+        status.textContent = 'Saved ✓';
+        setTimeout(() => status.textContent = '', 3000);
+    }
 
     // ── Edit mode ────────────────────────────────────────────
 
     function toggleEditMode() {
         editMode = !editMode;
-        const btn     = document.getElementById('edit-mode-btn');
-        const bar     = document.getElementById('edit-action-bar');
-        const boxes   = document.querySelectorAll('.room-box');
+        const btn         = document.getElementById('edit-mode-btn');
+        const bar         = document.getElementById('edit-action-bar');
+        const panelColumn = document.getElementById('room-panel-column');
+        const addRoomBtn  = document.getElementById('add-room-btn');
+        const boxes       = document.querySelectorAll('.room-box');
 
         if (editMode) {
             btn.textContent = 'Exit edit mode';
             btn.classList.add('bg-blue-50', 'border-blue-400', 'text-blue-700');
             bar.classList.remove('hidden');
+            panelColumn.classList.remove('hidden');
+            panelColumn.classList.add('flex');
+            addRoomBtn.classList.remove('hidden');
             boxes.forEach(box => {
                 box.querySelector('.room-link').classList.add('hidden');
                 box.querySelector('.edit-handles').classList.remove('hidden');
@@ -324,6 +660,9 @@
             btn.textContent = 'Edit rooms';
             btn.classList.remove('bg-blue-50', 'border-blue-400', 'text-blue-700');
             bar.classList.add('hidden');
+            panelColumn.classList.add('hidden');
+            panelColumn.classList.remove('flex');
+            addRoomBtn.classList.add('hidden');
             boxes.forEach(box => {
                 box.querySelector('.room-link').classList.remove('hidden');
                 box.querySelector('.edit-handles').classList.add('hidden');
@@ -372,14 +711,12 @@
     }
 
     function applyRoomGeometry(box, x, y, w, h) {
-        box.style.left   = x + '%';
-        box.style.top    = y + '%';
-        box.style.width  = w + '%';
-        box.style.height = h + '%';
-        box.dataset.posX  = x;
-        box.dataset.posY  = y;
-        box.dataset.width = w;
+        box.dataset.posX   = x;
+        box.dataset.posY   = y;
+        box.dataset.width  = w;
         box.dataset.height = h;
+
+        positionDevicesOnMap();
     }
 
     function updatePanelInputs(box) {
@@ -390,24 +727,63 @@
         document.getElementById('panel-height').value = parseFloat(box.dataset.height).toFixed(3);
     }
 
-    // ── Add room ─────────────────────────────────────────────
+    // ── Add room (modal) ─────────────────────────────────────
 
-    async function addRoom() {
-        const name = prompt('Room name:');
-        if (!name) return;
+    function openAddRoomModal() {
+        document.getElementById('add-room-error').classList.add('hidden');
+        document.getElementById('add-room-name').value = '';
+        document.getElementById('add-room-image').value = '';
+        document.getElementById('add-room-modal').classList.remove('hidden');
+    }
 
-        const res  = await fetch(storeUrl, {
-            method:  'POST',
+    function closeAddRoomModal() {
+        document.getElementById('add-room-modal').classList.add('hidden');
+    }
+
+    function closeAddRoomModalOnBackdrop(event) {
+        if (event.target === document.getElementById('add-room-modal')) closeAddRoomModal();
+    }
+
+    async function submitAddRoom() {
+        const name      = document.getElementById('add-room-name').value.trim();
+        const imageFile = document.getElementById('add-room-image').files[0];
+        const errorBox  = document.getElementById('add-room-error');
+
+        errorBox.classList.add('hidden');
+
+        if (!name) {
+            errorBox.textContent = 'Room name is required.';
+            errorBox.classList.remove('hidden');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('name', name);
+        if (imageFile) formData.append('image', imageFile);
+
+        const res = await fetch(storeUrl, {
+            method: 'POST',
             headers: {
-                'Content-Type':  'application/json',
-                'X-CSRF-TOKEN':  csrfToken,
-                'Accept':        'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json',
             },
-            body: JSON.stringify({ name }),
+            body: formData,
         });
 
-        const room = await res.json();
-        createRoomBox(room);
+        const data = await res.json();
+
+        if (!res.ok) {
+            if (data.errors) {
+                errorBox.textContent = Object.values(data.errors)[0][0];
+            } else {
+                errorBox.textContent = data.error || 'Something went wrong.';
+            }
+            errorBox.classList.remove('hidden');
+            return;
+        }
+
+        closeAddRoomModal();
+        createRoomBox(data);
     }
 
     function createRoomBox(room) {
@@ -420,7 +796,7 @@
         box.dataset.posY   = room.pos_y;
         box.dataset.width  = room.width;
         box.dataset.height = room.height;
-        box.dataset.image  = '';
+        box.dataset.image  = room.image ? `/images/rooms/${room.image}` : '';
         box.style.left     = room.pos_x + '%';
         box.style.top      = room.pos_y + '%';
         box.style.width    = room.width + '%';
@@ -450,6 +826,7 @@
 
         wrapper.appendChild(box);
         openRoomPanel(box);
+        positionDevicesOnMap();
     }
 
     // ── Save all rooms ───────────────────────────────────────
@@ -526,6 +903,27 @@
     // ── Drag to move ─────────────────────────────────────────
 
     document.addEventListener('mousedown', e => {
+        if (deviceEditMode) {
+            const deviceEl = e.target.closest('.standalone-device');
+            if (deviceEl) {
+                const wrapper = document.getElementById('map-wrapper');
+                const rect    = wrapper.getBoundingClientRect();
+
+                deviceDragState = {
+                    el:        deviceEl,
+                    startX:    e.clientX,
+                    startY:    e.clientY,
+                    startPosX: parseFloat(deviceEl.dataset.posX),
+                    startPosY: parseFloat(deviceEl.dataset.posY),
+                    wrapW:     rect.width,
+                    wrapH:     rect.height,
+                    started:   false,
+                };
+                e.preventDefault();
+                return;
+            }
+        }
+
         if (!editMode) return;
 
         const label = e.target.closest('.edit-label');
@@ -576,6 +974,26 @@
     });
 
     document.addEventListener('mousemove', e => {
+        if (deviceDragState) {
+            const dx = e.clientX - deviceDragState.startX;
+            const dy = e.clientY - deviceDragState.startY;
+
+            if (!deviceDragState.started) {
+                if (Math.abs(dx) < DRAG_THRESHOLD && Math.abs(dy) < DRAG_THRESHOLD) return;
+                deviceDragState.started = true;
+                document.body.classList.add('dragging');
+            }
+
+            const newX = Math.max(0, Math.min(100,
+                deviceDragState.startPosX + (dx / deviceDragState.wrapW) * 100));
+            const newY = Math.max(0, Math.min(100,
+                deviceDragState.startPosY + (dy / deviceDragState.wrapH) * 100));
+
+            deviceDragState.el.dataset.posX = newX;
+            deviceDragState.el.dataset.posY = newY;
+            positionDevicesOnMap();
+        }
+
         if (dragState) {
             const dx = e.clientX - dragState.startX;
             const dy = e.clientY - dragState.startY;
@@ -623,20 +1041,93 @@
     });
 
     document.addEventListener('mouseup', () => {
-        dragState   = null;
-        resizeState = null;
+        if (deviceDragState && deviceDragState.started) {
+            suppressNextDeviceClick = true;
+        }
+        dragState       = null;
+        resizeState     = null;
+        deviceDragState = null;
         document.body.classList.remove('dragging', 'resizing');
     });
 
+    function positionDevicesOnMap() {
+        const wrapper = document.getElementById('map-wrapper');
+        const img     = wrapper.querySelector('img');
+        const cRect   = wrapper.getBoundingClientRect();
+
+        const cW = cRect.width;
+        const cH = cRect.height;
+        const iW = img.naturalWidth;
+        const iH = img.naturalHeight;
+
+        const scale     = Math.min(cW / iW, cH / iH);
+        const renderedW = iW * scale;
+        const renderedH = iH * scale;
+        const offsetX   = (cW - renderedW) / 2;
+        const offsetY   = (cH - renderedH) / 2;
+
+        // Position standalone device circles
+        document.querySelectorAll('.standalone-device').forEach(el => {
+            const x = parseFloat(el.dataset.posX);
+            const y = parseFloat(el.dataset.posY);
+
+            const pixelX = offsetX + (x / 100) * renderedW;
+            const pixelY = offsetY + (y / 100) * renderedH;
+
+            el.style.left      = pixelX + 'px';
+            el.style.top       = pixelY + 'px';
+            el.style.transform = 'translate(-50%, -50%)';
+        });
+
+        // Position room boxes
+        document.querySelectorAll('.room-box').forEach(box => {
+            const x = parseFloat(box.dataset.posX);
+            const y = parseFloat(box.dataset.posY);
+            const w = parseFloat(box.dataset.width);
+            const h = parseFloat(box.dataset.height);
+
+            box.style.left   = (offsetX + (x / 100) * renderedW) + 'px';
+            box.style.top    = (offsetY + (y / 100) * renderedH) + 'px';
+            box.style.width  = (w / 100) * renderedW + 'px';
+            box.style.height = (h / 100) * renderedH + 'px';
+        });
+    }
+
+    // Run after image loads and on window resize
+    const mapImg = document.querySelector('#map-wrapper img');
+    function initializeMap() {
+        requestAnimationFrame(() => {
+            positionDevicesOnMap();
+        });
+    }
+
+    if (mapImg.complete) {
+        initializeMap();
+    } else {
+        mapImg.addEventListener('load', initializeMap);
+    }
+    const wrapper = document.getElementById('map-wrapper');
+
+    new ResizeObserver(() => {
+        positionDevicesOnMap();
+    }).observe(wrapper);
+
+    window.addEventListener('resize', positionDevicesOnMap);
+
     // ── Device modal ─────────────────────────────────────────
+
+    let currentModalDeviceId = null;
 
     function openModal(deviceId) {
         const device = devices.find(d => d.id === deviceId);
         if (!device) return;
 
+        currentModalDeviceId = deviceId;
+
         document.getElementById('modal-name').textContent  = device.name;
         document.getElementById('modal-type').textContent  = device.type;
         document.getElementById('modal-serial').textContent = device.serial_number || '—';
+        document.getElementById('modal-inventory').textContent = device.inventory_number || '—';
         document.getElementById('modal-model').textContent = device.model_num || '—';
         document.getElementById('modal-specs').textContent = device.specs     || '—';
         document.getElementById('modal-room').textContent  = 'Standalone';
@@ -647,8 +1138,6 @@
         badge.textContent      = device.status?.label || '—';
         badge.style.background = colors.bg;
         badge.style.color      = colors.text;
-
-        document.getElementById('modal-edit-link').href = `${editBaseUrl}/${device.id}/edit`;
 
         const partsSection = document.getElementById('modal-parts-section');
         const partsList    = document.getElementById('modal-parts');
