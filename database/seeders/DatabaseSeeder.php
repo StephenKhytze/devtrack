@@ -47,8 +47,7 @@ class DatabaseSeeder extends Seeder
         // Rooms, devices, parts, logs — each in its own seeder class
         $this->call([
             RoomSeeder::class,
-            InventorySeeder::class,
-            MaintenanceLogSeeder::class,
+            InventorySeeder::class, 
         ]);
     }
 }

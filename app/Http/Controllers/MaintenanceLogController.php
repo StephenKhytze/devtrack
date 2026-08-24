@@ -16,9 +16,7 @@ class MaintenanceLogController extends Controller
         $statuses = DeviceStatus::all();
         $sort     = $request->get('sort', 'recent');
 
-        $query = MaintenanceLog::with(['device.room', 'statusBefore', 'statusAfter', 'performedBy'])
-            ->orderBy('date', 'desc')
-            ->orderBy('created_at', 'desc');
+        $query = MaintenanceLog::with(['device.room', 'statusBefore', 'statusAfter', 'performedBy']);
 
         if ($request->filled('device')) {
             $query->where('device_id', $request->device);
@@ -44,6 +42,20 @@ class MaintenanceLogController extends Controller
                 ->orWhereHas('performedBy', fn($q) => $q->where('username', 'like', "%{$search}%"));
             });
         }
+
+        match ($sort) {
+            'alpha' => $query->join('devices', 'maintenance_logs.device_id', '=', 'devices.id')
+                              ->orderBy('devices.name')
+                              ->select('maintenance_logs.*'),
+            'room'  => $query->join('devices', 'maintenance_logs.device_id', '=', 'devices.id')
+                              ->leftJoin('rooms', 'devices.room_id', '=', 'rooms.id')
+                              ->orderBy('rooms.name')
+                              ->select('maintenance_logs.*'),
+            'type'  => $query->join('devices', 'maintenance_logs.device_id', '=', 'devices.id')
+                              ->orderBy('devices.type')
+                              ->select('maintenance_logs.*'),
+            default => $query->orderBy('date', 'desc')->orderBy('created_at', 'desc'),
+        };
 
         $logs = $query->paginate(10)->withQueryString();
 

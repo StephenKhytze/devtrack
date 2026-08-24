@@ -3,7 +3,7 @@
 @section('title', 'Maintenance Logs')
 
 @section('toolbar')
-    <div class="flex items-center gap-2 flex-nowrap shrink-0">
+    <div class="flex items-center gap-2 flex-nowrap shrink-0 w-263">
 
         <form method="GET" action="{{ route('maintenance.index') }}"
               class="flex items-center gap-2 flex-nowrap">
@@ -14,7 +14,7 @@
                    class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700 w-24">
 
             <select name="device"
-                    class="text-base border border-gray-300 rounded-md truncate w-60 px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-green-700">
+                    class="text-base border border-gray-300 rounded-md truncate w-42 px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-green-700">
                 <option value="">All devices</option>
                 @foreach ($devices as $device)
                     <option value="{{ $device->id }}" {{ request('device') == $device->id ? 'selected' : '' }}>
@@ -54,7 +54,7 @@
         </form>
 
         <a href="{{ route('maintenance.create') }}"
-           class="px-4 py-2 text-base font-medium bg-green-700 text-white rounded-md hover:bg-green-800 transition shrink-0">
+           class="px-4 py-2 text-base font-medium bg-green-700 text-white rounded-md hover:bg-green-800 transition shrink-0 ml-auto">
             + Add Log
         </a>
 

@@ -30,14 +30,15 @@
             @endif
 
             <form method="POST" action="{{ route('login.post') }}"
+                autocomplete="off"
                   class="flex flex-col gap-4">
                 @csrf
 
                 <div class="flex flex-col gap-1">
                     <label class="text-base font-medium text-gray-700">Username</label>
                     <input type="text" name="username"
-                           value="{{ old('username') }}"
                            autofocus
+                           autocomplete="off"
                            class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
                 </div>
 
