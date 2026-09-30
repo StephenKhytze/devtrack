@@ -1064,30 +1064,44 @@ class InventorySeeder extends Seeder
                 $standaloneIndex++;
             }
 
-            $device = Device::create([
-                'name'             => $d['name'],
-                'type'             => $d['type'],
-                'model_num'        => $d['model_num'],
-                'serial_number'    => $d['serial_number'],
-                'inventory_number' => $d['inventory_number'],
-                'specs'            => $d['specs'],
-                'sub_parts'        => !empty($d['parts']),
-                'status_id'        => $statusMap[$d['status']],
-                'room_id'          => $roomId,
-                'pos_x'            => $posX,
-                'pos_y'            => $posY,
-            ]);
+            $query = Device::query();
+            if (!empty($d['inventory_number'])) {
+                $query->where('inventory_number', $d['inventory_number']);
+            } elseif (!empty($d['serial_number'])) {
+                $query->where('serial_number', $d['serial_number']);
+            } else {
+                $query->where('name', $d['name'])->where('room_id', $roomId);
+            }
 
-            foreach ($d['parts'] as $p) {
-                DevicePart::create([
-                    'device_id'        => $device->id,
-                    'name'             => $p['name'],
-                    'model_num'        => $p['model_num'],
-                    'inventory_number' => $p['inventory_number'] ?? null,
-                    'serial_number'    => $p['serial_number'] ?? null,
-                    'status_id'        => $statusMap[$d['status']], // parts default to parent device's status
+            $device = $query->first();
+
+            if (!$device) {
+                $device = Device::create([
+                    'name'             => $d['name'],
+                    'type'             => $d['type'],
+                    'model_num'        => $d['model_num'],
+                    'serial_number'    => $d['serial_number'],
+                    'inventory_number' => $d['inventory_number'],
+                    'specs'            => $d['specs'],
+                    'sub_parts'        => !empty($d['parts']),
+                    'status_id'        => $statusMap[$d['status']],
+                    'room_id'          => $roomId,
+                    'pos_x'            => $posX,
+                    'pos_y'            => $posY,
                 ]);
+
+                foreach ($d['parts'] as $p) {
+                    DevicePart::create([
+                        'device_id'        => $device->id,
+                        'name'             => $p['name'],
+                        'model_num'        => $p['model_num'],
+                        'inventory_number' => $p['inventory_number'] ?? null,
+                        'serial_number'    => $p['serial_number'] ?? null,
+                        'status_id'        => $statusMap[$d['status']], // parts default to parent device's status
+                    ]);
+                }
             }
         }
     }
 }
+

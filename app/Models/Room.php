@@ -13,9 +13,21 @@ class Room extends Model
         'width',
         'height',
         'image',
+        'is_storage',
     ];
+
     public function devices()
     {
         return $this->hasMany(Device::class);
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_storage', false);
+    }
+
+    public function scopeStorage($query)
+    {
+        return $query->where('is_storage', true);
     }
 }

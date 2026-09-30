@@ -3,18 +3,29 @@
 @section('title', 'Maintenance Logs')
 
 @section('toolbar')
-    <div class="flex items-center gap-2 flex-nowrap shrink-0 w-263">
+    <a href="{{ route('maintenance.create') }}"
+       class="ml-auto px-4 py-2 text-base font-medium bg-green-700 text-white rounded-md hover:bg-green-800 transition">
+        + Add log
+    </a>
+@endsection
 
+@section('content')
+<div class="mt-4 flex flex-col gap-4">
+
+    {{-- Filter bar --}}
+    <div class="bg-white border border-gray-200 rounded-xl p-4 flex flex-col gap-3">
         <form method="GET" action="{{ route('maintenance.index') }}"
-              class="flex items-center gap-2 flex-nowrap">
+              class="flex items-center gap-3 flex-wrap">
 
+            {{-- Search --}}
             <input type="text" name="search"
                    value="{{ request('search') }}"
-                   placeholder="Search..."
-                   class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700 w-24">
+                   placeholder="Search maintenance logs..."
+                   class="text-base border border-gray-300 rounded-md px-3 py-2 w-56 focus:outline-none focus:ring-1 focus:ring-green-700">
 
+            {{-- Device filter --}}
             <select name="device"
-                    class="text-base border border-gray-300 rounded-md truncate w-42 px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-green-700">
+                    class="text-base border border-gray-300 rounded-md px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-green-700">
                 <option value="">All devices</option>
                 @foreach ($devices as $device)
                     <option value="{{ $device->id }}" {{ request('device') == $device->id ? 'selected' : '' }}>
@@ -23,6 +34,7 @@
                 @endforeach
             </select>
 
+            {{-- Status after --}}
             <select name="status_after"
                     class="text-base border border-gray-300 rounded-md px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-green-700">
                 <option value="">All outcomes</option>
@@ -33,60 +45,49 @@
                 @endforeach
             </select>
 
-            <input type="date" name="date_from" value="{{ request('date_from') }}"
-                   class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
+            {{-- Date from --}}
+            <input type="date" name="date_from" value="{{ request('date_from') }}" title="Date From"
+                   class="text-base border border-gray-300 rounded-md px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-green-700">
 
-            <input type="date" name="date_to" value="{{ request('date_to') }}"
-                   class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
+            {{-- Date to --}}
+            <input type="date" name="date_to" value="{{ request('date_to') }}" title="Date To"
+                   class="text-base border border-gray-300 rounded-md px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-green-700">
 
             <button type="submit"
                     class="px-4 py-2 text-base font-medium bg-green-700 text-white rounded-md hover:bg-green-800 transition">
-                Search
+                Filter
             </button>
 
-            @if (request('search') || request('device') || request('status_after') || request('date_from') || request('date_to'))
+            @if (request()->hasAny(['search', 'device', 'status_after', 'date_from', 'date_to']))
                 <a href="{{ route('maintenance.index') }}"
                    class="px-4 py-2 text-base font-medium text-gray-500 border border-gray-300 rounded-md hover:bg-gray-100 transition">
                     Clear
                 </a>
             @endif
-
         </form>
 
-        <a href="{{ route('maintenance.create') }}"
-           class="px-4 py-2 text-base font-medium bg-green-700 text-white rounded-md hover:bg-green-800 transition shrink-0 ml-auto">
-            + Add Log
-        </a>
-
-    </div>
-
-    {{-- Sort controls --}}
-    <div class="flex items-center gap-2 shrink-0">
-        <span class="text-base text-gray-500">Sort:</span>
-        <div class="flex border border-gray-300 rounded-md overflow-hidden">
-            @foreach ([
-                'recent' => 'Recent',
-                'alpha'  => 'A–Z',
-                'room'   => 'Room',
-                'type'   => 'Type',
-            ] as $value => $label)
-                <a href="{{ request()->fullUrlWithQuery(['sort' => $value, 'page' => 1]) }}"
-                class="px-3 py-2 text-base font-medium transition
-                        {{ $sort === $value ? 'bg-green-700 text-white' : 'text-gray-500 hover:bg-gray-100' }}">
-                    {{ $label }}
-                </a>
-            @endforeach
+        {{-- Sort controls --}}
+        <div class="flex items-center gap-2 pt-2 border-t border-gray-100 text-sm">
+            <span class="text-gray-500">Sort by:</span>
+            <div class="flex border border-gray-300 rounded-md overflow-hidden">
+                @foreach ([
+                    'recent' => 'Recent',
+                    'alpha'  => 'A–Z',
+                    'room'   => 'Room',
+                    'type'   => 'Type',
+                ] as $value => $label)
+                    <a href="{{ request()->fullUrlWithQuery(['sort' => $value, 'page' => 1]) }}"
+                    class="px-3 py-1.5 font-medium transition
+                            {{ $sort === $value ? 'bg-green-700 text-white' : 'text-gray-500 hover:bg-gray-100' }}">
+                        {{ $label }}
+                    </a>
+                @endforeach
+            </div>
         </div>
     </div>
-@endsection
 
-@section('content')
-
-    <div class="py-3 text-base text-gray-500">
-        Showing <strong class="text-gray-800">{{ $logs->count() }}</strong> log(s)
-    </div>
-
-    <div class="mb-6 bg-white border border-gray-200 rounded-xl overflow-hidden">
+    {{-- Maintenance Table --}}
+    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
         <table class="w-full text-base">
             <thead class="bg-gray-50 border-b border-gray-200">
                 <tr>
@@ -118,7 +119,7 @@
                             {{ $log->performedBy->username }}
                         </td>
                         <td class="px-4 py-3">
-                            <span class="px-2 py-1 rounded-full text-base font-medium"
+                            <span class="px-2 py-1 rounded-full text-sm font-medium"
                                   style="
                                       background-color: {{
                                           match($log->statusBefore->color) {
@@ -140,7 +141,7 @@
                             </span>
                         </td>
                         <td class="px-4 py-3">
-                            <span class="px-2 py-1 rounded-full text-base font-medium"
+                            <span class="px-2 py-1 rounded-full text-sm font-medium"
                                   style="
                                       background-color: {{
                                           match($log->statusAfter->color) {
@@ -161,28 +162,50 @@
                                 {{ $log->statusAfter->label }}
                             </span>
                         </td>
-                        <td class="px-4 py-3 text-gray-600 max-w-xs truncate">
+                        <td class="px-4 py-3 text-gray-600 max-w-xs truncate" title="{{ $log->description }}">
                             {{ $log->description }}
                         </td>
                         <td class="px-4 py-3 text-gray-600 whitespace-nowrap">
                             @if ($log->deadline)
-                                <span class="{{ \Carbon\Carbon::parse($log->deadline)->isPast() ? 'text-red-600 font-medium' : 'text-gray-600' }}">
+                                @php
+                                    $isOverdue = \Carbon\Carbon::parse($log->deadline)->isPast() &&
+                                                 $log->statusAfter->label !== 'Good';
+                                @endphp
+                                <span class="{{ $isOverdue ? 'text-red-600 font-medium' : '' }}">
                                     {{ \Carbon\Carbon::parse($log->deadline)->format('M d, Y') }}
+                                    @if ($isOverdue)
+                                        <span class="text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded ml-1">Overdue</span>
+                                    @endif
                                 </span>
                             @else
                                 <span class="text-gray-400">—</span>
                             @endif
                         </td>
-                        <td class="px-4 py-3" onclick="event.stopPropagation()">
-                            <a href="{{ route('maintenance.edit', $log->id) }}"
-                            class="px-3 py-1 text-base font-medium border border-gray-300 rounded-md hover:bg-gray-100 transition">
-                                Edit
-                            </a>
-                        </td>
+                        @if (Auth::user()->access_type === 'admin')
+                            <td class="px-4 py-3" onclick="event.stopPropagation()">
+                                <div class="flex items-center gap-2">
+                                    <a href="{{ route('maintenance.edit', $log->id) }}"
+                                       class="px-2 py-1 text-base border border-gray-300 rounded hover:bg-gray-100 transition no-underline text-gray-700">
+                                        Edit
+                                    </a>
+                                    <form method="POST" action="{{ route('maintenance.destroy', $log->id) }}"
+                                          onsubmit="return confirm('Delete this log?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit"
+                                                class="px-2 py-1 text-base border border-red-200 text-red-600 rounded hover:bg-red-50 transition">
+                                            Delete
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        @else
+                            <td class="px-4 py-3 text-sm text-gray-400">—</td>
+                        @endif
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="8" class="px-4 py-8 text-center text-gray-400">
+                        <td colspan="9" class="px-4 py-8 text-center text-gray-400">
                             No maintenance logs found.
                         </td>
                     </tr>
@@ -194,7 +217,7 @@
             <div class="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
                 <p class="text-sm text-gray-500">
                     Showing {{ $logs->firstItem() }}–{{ $logs->lastItem() }}
-                    of {{ $logs->total() }} devices
+                    of {{ $logs->total() }} logs
                 </p>
                 <div class="flex items-center gap-1">
                     {{-- Previous --}}
@@ -226,6 +249,8 @@
             </div>
         @endif
     </div>
+
+</div>
 
 {{-- Maintenance log modal --}}
 <div id="log-modal"

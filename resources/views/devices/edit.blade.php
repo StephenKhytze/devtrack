@@ -99,41 +99,60 @@
                                 onchange="switchMap()"
                                 class="text-base border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-green-700">
                             <option value="">No room (standalone)</option>
-                            @foreach ($rooms as $room)
-                                <option value="{{ $room->id }}"
-                                        data-image="{{ $room->image ? asset('images/rooms/' . $room->image) : '' }}"
-                                        {{ old('room_id', $device->room_id) == $room->id ? 'selected' : '' }}>
-                                    {{ $room->name }}
-                                </option>
-                            @endforeach
+                            <optgroup label="Floor Layout Rooms">
+                                @foreach ($rooms->where('is_storage', false) as $room)
+                                    <option value="{{ $room->id }}"
+                                            data-is-storage="0"
+                                            data-image="{{ $room->image ? asset('images/rooms/' . $room->image) : '' }}"
+                                            {{ old('room_id', $device->room_id) == $room->id ? 'selected' : '' }}>
+                                        {{ $room->name }}
+                                    </option>
+                                @endforeach
+                            </optgroup>
+                            <optgroup label="Storage / Dump (No map location)">
+                                @foreach ($rooms->where('is_storage', true) as $room)
+                                    <option value="{{ $room->id }}"
+                                            data-is-storage="1"
+                                            data-image=""
+                                            {{ old('room_id', $device->room_id) == $room->id ? 'selected' : '' }}>
+                                        {{ $room->name }}
+                                    </option>
+                                @endforeach
+                            </optgroup>
                         </select>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="flex flex-col gap-1">
-                            <label class="text-base font-medium text-gray-700">Position X (%)</label>
-                            <input type="number" name="pos_x" id="pos_x" step="0.001"
-                                   value="{{ old('pos_x', $device->pos_x) }}"
-                                   oninput="syncCircleFromInputs()"
-                                   class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
-                        </div>
-                        <div class="flex flex-col gap-1">
-                            <label class="text-base font-medium text-gray-700">Position Y (%)</label>
-                            <input type="number" name="pos_y" id="pos_y" step="0.001"
-                                   value="{{ old('pos_y', $device->pos_y) }}"
-                                   oninput="syncCircleFromInputs()"
-                                   class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
-                        </div>
+                    <div id="storage-room-note" class="hidden px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-600">
+                        📦 Storage room devices do not require a map location.
                     </div>
 
-                    {{-- Map toggle --}}
-                    <div>
-                        <button type="button"
-                                onclick="toggleMap()"
-                                id="map-toggle-btn"
-                                class="px-4 py-2 text-xs font-medium border border-gray-300 text-gray-600 rounded-md hover:bg-gray-100 transition">
-                            Set position on map
-                        </button>
+                    <div id="position-inputs-container" class="flex flex-col gap-3">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="flex flex-col gap-1">
+                                <label class="text-base font-medium text-gray-700">Position X (%)</label>
+                                <input type="number" name="pos_x" id="pos_x" step="0.001"
+                                       value="{{ old('pos_x', $device->pos_x) }}"
+                                       oninput="syncCircleFromInputs()"
+                                       class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <label class="text-base font-medium text-gray-700">Position Y (%)</label>
+                                <input type="number" name="pos_y" id="pos_y" step="0.001"
+                                       value="{{ old('pos_y', $device->pos_y) }}"
+                                       oninput="syncCircleFromInputs()"
+                                       class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
+                            </div>
+                        </div>
+
+                        {{-- Map toggle --}}
+                        <div>
+                            <button type="button"
+                                    onclick="toggleMap()"
+                                    id="map-toggle-btn"
+                                    class="px-4 py-2 text-xs font-medium border border-gray-300 text-gray-600 rounded-md hover:bg-gray-100 transition">
+                                Set position on map
+                            </button>
+                        </div>
                     </div>
 
                     {{-- Sub parts --}}
@@ -354,6 +373,44 @@
         </div>
     @endif
 
+    {{-- Device Update Logs / History Section --}}
+    <div class="mt-4 bg-white border border-gray-200 rounded-xl p-6 flex flex-col gap-4">
+        <div class="flex items-center justify-between">
+            <h3 class="text-base font-semibold text-gray-800">Update & Activity History</h3>
+            <span class="text-xs text-gray-400">{{ $device->updateLogs->count() }} event(s) recorded</span>
+        </div>
+
+        <div class="divide-y divide-gray-100 overflow-y-auto max-h-60 pr-1">
+            @forelse ($device->updateLogs as $log)
+                <div class="py-2.5 flex flex-col gap-1 text-sm">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-0.5 rounded-full text-xs font-medium border
+                                {{ match($log->action) {
+                                    'created' => 'bg-green-50 text-green-700 border-green-200',
+                                    'updated', 'quick_updated' => 'bg-blue-50 text-blue-700 border-blue-200',
+                                    'status_changed' => 'bg-amber-50 text-amber-700 border-amber-200',
+                                    'moved' => 'bg-teal-50 text-teal-700 border-teal-200',
+                                    'part_added', 'part_updated', 'part_deleted' => 'bg-indigo-50 text-indigo-700 border-indigo-200',
+                                    'maintenance' => 'bg-purple-50 text-purple-700 border-purple-200',
+                                    default => 'bg-gray-50 text-gray-700 border-gray-200'
+                                } }}">
+                                {{ ucfirst(str_replace('_', ' ', $log->action)) }}
+                            </span>
+                            <span class="text-gray-700">{{ $log->description }}</span>
+                        </div>
+                        <span class="text-xs text-gray-400 whitespace-nowrap">{{ $log->created_at->format('M d, Y h:i A') }}</span>
+                    </div>
+                    @if ($log->user)
+                        <span class="text-xs text-gray-400">By: {{ $log->user->username }} ({{ $log->user->access_type }})</span>
+                    @endif
+                </div>
+            @empty
+                <p class="text-sm text-gray-400 py-3">No activity logs recorded for this device yet.</p>
+            @endforelse
+        </div>
+    </div>
+
 </div>
 
 <style>
@@ -392,11 +449,29 @@
     function switchMap() {
         const select    = document.getElementById('room_id');
         const selected  = select?.options[select.selectedIndex];
+        const isStorage = selected ? selected.getAttribute('data-is-storage') === '1' : false;
         const imageUrl  = selected ? selected.getAttribute('data-image') : '';
         const mapOuter  = document.getElementById('map-outer');
         const mapImage  = document.getElementById('map-image');
         const placeholder = document.getElementById('map-placeholder');
         const circle    = document.getElementById('drag-circle');
+        const posInputs = document.getElementById('position-inputs-container');
+        const storeNote = document.getElementById('storage-room-note');
+        const mapWrapper = document.getElementById('position-map');
+
+        if (isStorage) {
+            if (posInputs) posInputs.classList.add('hidden');
+            if (storeNote) storeNote.classList.remove('hidden');
+            document.getElementById('pos_x').value = '';
+            document.getElementById('pos_y').value = '';
+            if (mapWrapper && !mapWrapper.classList.contains('hidden')) {
+                toggleMap();
+            }
+            return;
+        } else {
+            if (posInputs) posInputs.classList.remove('hidden');
+            if (storeNote) storeNote.classList.add('hidden');
+        }
 
         if (select?.value !== '' && !imageUrl) {
             // Room selected but no image

@@ -3,9 +3,11 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DeviceController;
+use App\Http\Controllers\DeviceLogController;
 use App\Http\Controllers\FloorController;
 use App\Http\Controllers\MaintenanceLogController;
 use App\Http\Controllers\RoomController;
+use App\Http\Controllers\StorageController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -27,6 +29,8 @@ Route::middleware('auth')->group(function () {
 
     // Devices — view (both admin and staff)
     Route::get('/devices', [DeviceController::class, 'index'])->name('devices.index');
+    Route::get('/devices/logs', [DeviceLogController::class, 'index'])->name('devices.logs');
+    Route::get('/devices/{device}/logs', [DeviceLogController::class, 'forDevice'])->name('devices.logs.device');
 
     // Devices — admin only
     Route::middleware('admin')->group(function () {
@@ -62,4 +66,8 @@ Route::middleware('auth')->group(function () {
         Route::put('/rooms/{room}', [RoomController::class, 'update'])->name('rooms.update');
         Route::delete('/rooms/{room}', [RoomController::class, 'destroy'])->name('rooms.destroy');
     });
+
+    // Storage
+    Route::get('/storage', [StorageController::class, 'index'])->name('storage.index');
+    Route::get('/storage/{room}', [StorageController::class, 'show'])->name('storage.show');
 });

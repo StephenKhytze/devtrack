@@ -10,11 +10,12 @@ class FloorController extends Controller
 {
     public function index()
     {
-        $rooms = Room::with(['devices' => function ($query) {
-            $query->with('status');
-        }])->get();
+        $rooms = Room::where('is_storage', false)
+            ->with(['devices' => function ($query) {
+                $query->with('status');
+            }])->get();
 
-        $standaloneDevices = Device::with('status')
+        $standaloneDevices = Device::with(['status', 'parts.status'])
             ->whereNull('room_id')
             ->get();
 
@@ -30,6 +31,10 @@ class FloorController extends Controller
     }
     public function room(Room $room)
     {
+        if ($room->is_storage) {
+            return redirect()->route('storage.show', $room->id);
+        }
+
         $room->load(['devices' => function ($query) {
             $query->with(['status', 'parts.status']);
         }]);

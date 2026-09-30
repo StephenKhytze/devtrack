@@ -111,6 +111,19 @@ class MaintenanceLogController extends Controller
         $device->status_id = $request->status_after_id;
         $device->save();
 
+        \App\Models\DeviceUpdateLog::record(
+            $device,
+            'maintenance',
+            "Maintenance performed by {$user->username}: {$request->description}",
+            [
+                'status_before_id' => $request->status_before_id,
+                'status_after_id'  => $request->status_after_id,
+                'date'             => $request->date,
+                'deadline'         => $request->deadline,
+            ],
+            $user
+        );
+
         return redirect()->route('maintenance.index')
                         ->with('success', 'Maintenance log added successfully.');
     }
@@ -158,6 +171,19 @@ class MaintenanceLogController extends Controller
         // Update device status to match status_after
         $log->device->status_id = $request->status_after_id;
         $log->device->save();
+
+        \App\Models\DeviceUpdateLog::record(
+            $log->device,
+            'maintenance',
+            "Maintenance log updated by {$user->username}: {$request->description}",
+            [
+                'status_before_id' => $request->status_before_id,
+                'status_after_id'  => $request->status_after_id,
+                'date'             => $request->date,
+                'deadline'         => $request->deadline,
+            ],
+            $user
+        );
 
         return redirect()->route('maintenance.index')
                         ->with('success', 'Maintenance log updated successfully.');

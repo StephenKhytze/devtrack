@@ -34,4 +34,9 @@ class Device extends Model
     {
         return $this->belongsTo(Room::class);
     }
+
+    public function updateLogs()
+    {
+        return $this->hasMany(DeviceUpdateLog::class)->orderBy('created_at', 'desc');
+    }
 }

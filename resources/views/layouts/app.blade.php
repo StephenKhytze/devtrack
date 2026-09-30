@@ -47,15 +47,25 @@
             </a>
             <a href="{{ route('devices.index') }}"
                class="px-5 py-2 text-base font-medium transition
-                      {{ request()->routeIs('devices*') ? 'bg-green-700 text-white' : 'text-gray-500 hover:bg-gray-100' }}">
+                      {{ request()->routeIs('devices.index') || (request()->routeIs('devices.*') && !request()->routeIs('devices.logs*')) ? 'bg-green-700 text-white' : 'text-gray-500 hover:bg-gray-100' }}">
                 Full list
+            </a>
+            <a href="{{ route('devices.logs') }}"
+               class="px-5 py-2 text-base font-medium transition
+                      {{ request()->routeIs('devices.logs*') ? 'bg-green-700 text-white' : 'text-gray-500 hover:bg-gray-100' }}">
+                Device logs
             </a>
             <a href="{{ route('maintenance.index') }}"
                class="px-5 py-2 text-base font-medium transition
                       {{ request()->routeIs('maintenance*') ? 'bg-green-700 text-white' : 'text-gray-500 hover:bg-gray-100' }}">
                 Maintenance
             </a>
-    </div>
+            <a href="{{ route('storage.index') }}"
+               class="px-5 py-2 text-base font-medium transition
+                      {{ request()->routeIs('storage*') ? 'bg-green-700 text-white' : 'text-gray-500 hover:bg-gray-100' }}">
+                Storage
+            </a>
+        </div>
 
         {{-- Extra toolbar content per page --}}
         @yield('toolbar')

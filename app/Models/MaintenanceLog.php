@@ -17,7 +17,7 @@ class MaintenanceLog extends Model
         'status_before_id',
         'status_after_id',
     ];
-    
+
     public function device()
     {
         return $this->belongsTo(Device::class);

@@ -3,8 +3,19 @@
 @section('title', 'Device List')
 
 @section('toolbar')
-    <div class="flex items-center gap-3 flex-wrap flex-1">
+    @if (auth()->user()->access_type === 'admin')
+        <a href="{{ route('devices.create') }}"
+           class="ml-auto px-4 py-2 text-base font-medium bg-green-700 text-white rounded-md hover:bg-green-800 transition">
+            + Add device
+        </a>
+    @endif
+@endsection
 
+@section('content')
+<div class="mt-4 flex flex-col gap-4">
+
+    {{-- Filter bar --}}
+    <div class="bg-white border border-gray-200 rounded-xl p-4 flex flex-col gap-3">
         <form method="GET" action="{{ route('devices.index') }}"
               class="flex items-center gap-3 flex-wrap">
 
@@ -12,17 +23,26 @@
             <input type="text" name="search"
                    value="{{ request('search') }}"
                    placeholder="Search devices..."
-                   class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
+                   class="text-base border border-gray-300 rounded-md px-3 py-2 w-64 focus:outline-none focus:ring-1 focus:ring-green-700">
 
             {{-- Room filter --}}
             <select name="room"
                     class="text-base border border-gray-300 rounded-md px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-green-700">
-                <option value="">All rooms</option>
-                @foreach ($rooms as $room)
-                    <option value="{{ $room->id }}" {{ request('room') == $room->id ? 'selected' : '' }}>
-                        {{ $room->name }}
-                    </option>
-                @endforeach
+                <option value="">All rooms & storage</option>
+                <optgroup label="Floor Layout Rooms">
+                    @foreach ($rooms->where('is_storage', false) as $room)
+                        <option value="{{ $room->id }}" {{ request('room') == $room->id ? 'selected' : '' }}>
+                            {{ $room->name }}
+                        </option>
+                    @endforeach
+                </optgroup>
+                <optgroup label="Storage / Archives">
+                    @foreach ($rooms->where('is_storage', true) as $room)
+                        <option value="{{ $room->id }}" {{ request('room') == $room->id ? 'selected' : '' }}>
+                            {{ $room->name }} (Storage)
+                        </option>
+                    @endforeach
+                </optgroup>
                 <option value="standalone" {{ request('room') === 'standalone' ? 'selected' : '' }}>
                     No room (standalone)
                 </option>
@@ -41,7 +61,7 @@
 
             <button type="submit"
                     class="px-4 py-2 text-base font-medium bg-green-700 text-white rounded-md hover:bg-green-800 transition">
-                Search
+                Filter
             </button>
 
             @if (request('search') || request('room') || request('status'))
@@ -52,16 +72,9 @@
             @endif
         </form>
 
-        @if (auth()->user()->access_type === 'admin')
-            <a href="{{ route('devices.create') }}"
-               class="px-4 py-2 text-base font-medium bg-green-700 text-white rounded-md hover:bg-green-800 transition ml-auto shrink-0">
-                + Add device
-            </a>
-        @endif
-    </div>
-     {{-- Sort controls — w-full forces this onto its own full-width row below --}}
-        <div class="w-full flex items-center gap-2">
-            <span class="text-base text-gray-500">Sort:</span>
+        {{-- Sort controls --}}
+        <div class="flex items-center gap-2 pt-2 border-t border-gray-100 text-sm">
+            <span class="text-gray-500">Sort by:</span>
             <div class="flex border border-gray-300 rounded-md overflow-hidden">
                 @foreach ([
                     'recent' => 'Recent',
@@ -70,21 +83,17 @@
                     'type'   => 'Type',
                 ] as $value => $label)
                     <a href="{{ request()->fullUrlWithQuery(['sort' => $value, 'page' => 1]) }}"
-                    class="px-3 py-2 text-base font-medium transition
+                    class="px-3 py-1.5 font-medium transition
                             {{ $sort === $value ? 'bg-green-700 text-white' : 'text-gray-500 hover:bg-gray-100' }}">
                         {{ $label }}
                     </a>
                 @endforeach
             </div>
         </div>
-@endsection
-
-@section('content')
-    <div class="py-3 text-base text-gray-500">
-        Showing <strong class="text-gray-800">{{ $devices->count() }}</strong> device(s)
     </div>
 
-    <div class="mb-6 bg-white border border-gray-200 rounded-xl overflow-hidden">
+    {{-- Devices Table --}}
+    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
         <table class="w-full text-base">
             <thead class="bg-gray-50 border-b border-gray-200">
                 <tr>
@@ -149,45 +158,47 @@
                                 <div class="flex items-center gap-2">
                                     <a href="{{ route('devices.edit', $device->id) }}"
                                     onclick="event.stopPropagation()"
-                                    class="px-3 py-1 text-sm font-medium text-green-700 border border-green-700 rounded-md hover:bg-green-50 transition">
+                                    class="px-2 py-1 text-base border border-gray-300 rounded hover:bg-gray-100 transition no-underline text-gray-700">
                                         Edit
                                     </a>
-                                    <form method="POST" action="{{ route('devices.destroy', $device->id) }}"
-                                        onclick="event.stopPropagation()"
-                                        onsubmit="return confirm('Delete {{ $device->name }}?')">
+                                    <form method="POST"
+                                        action="{{ route('devices.destroy', $device->id) }}"
+                                        onsubmit="return confirm('Delete this device?')"
+                                        onclick="event.stopPropagation()">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit"
-                                                class="px-3 py-1 text-sm font-medium text-red-600 border border-red-300 rounded-md hover:bg-red-50 transition">
+                                                class="px-2 py-1 text-base border border-red-200 text-red-600 rounded hover:bg-red-50 transition">
                                             Delete
                                         </button>
                                     </form>
                                 </div>
                             </td>
                         @else
-                            <td class="px-3 py-3 text-gray-400 text-sm">—</td>
+                            <td class="px-3 py-3 text-sm text-gray-400">—</td>
                         @endif
                     </tr>
 
+                    {{-- Sub-parts expand row --}}
                     @if ($device->sub_parts && $device->parts->isNotEmpty())
-                        <tr id="parts-{{ $device->id }}" class="hidden bg-gray-50">
-                            <td colspan="10" class="px-8 py-3">
-                                <p class="text-sm font-medium text-gray-500 mb-2">Parts for {{ $device->name }}</p>
-                        <table class="w-full text-sm">
+                        <tr id="parts-{{ $device->id }}" class="hidden bg-gray-50 border-b border-gray-100">
+                            <td colspan="10" class="px-6 py-3">
+                                <p class="text-sm font-medium text-gray-500 mb-2">Sub-parts</p>
+                                <table class="w-full text-sm">
                                     <thead>
-                                        <tr class="text-gray-500">
-                                            <th class="text-left py-1 pr-4">Part name</th>
-                                            <th class="text-left py-1 pr-4">Model</th>
-                                            <th class="text-left py-1 pr-4">Serial num.</th>
-                                            <th class="text-left py-1 pr-4">Inventory num.</th>
-                                            <th class="text-left py-1 pr-4">Specs</th>
-                                            <th class="text-left py-1">Status</th>
+                                        <tr class="text-left text-gray-400 font-normal">
+                                            <th class="pb-1 pr-4">Part name</th>
+                                            <th class="pb-1 pr-4">Model</th>
+                                            <th class="pb-1 pr-4">Serial number</th>
+                                            <th class="pb-1 pr-4">Inventory number</th>
+                                            <th class="pb-1 pr-4">Specs</th>
+                                            <th class="pb-1">Status</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-gray-200">
                                         @foreach ($device->parts as $part)
                                             <tr>
-                                                <td class="py-2 pr-4 text-gray-700">{{ $part->name }}</td>
+                                                <td class="py-2 pr-4 font-medium text-gray-700">{{ $part->name }}</td>
                                                 <td class="py-2 pr-4 text-gray-500">{{ $part->model_num ?? '—' }}</td>
                                                 <td class="py-2 pr-4 text-gray-500">{{ $part->serial_number ?? '—' }}</td>
                                                 <td class="py-2 pr-4 text-gray-500">{{ $part->inventory_number ?? '—' }}</td>
@@ -268,6 +279,8 @@
             </div>
         @endif
     </div>
+
+</div>
 
     <div id="device-modal"
         class="fixed inset-0 z-50 flex items-center justify-center hidden"

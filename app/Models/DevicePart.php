@@ -12,6 +12,8 @@ class DevicePart extends Model
         'device_id',
         'name',
         'model_num',
+        'inventory_number',
+        'serial_number',
         'specs',
         'status_id',
     ];

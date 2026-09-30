@@ -18,36 +18,43 @@ class DatabaseSeeder extends Seeder
         // Device Statuses
         // ============================================================
 
-        $good        = DeviceStatus::create(['label' => 'Good',           'color' => 'green']);
-        $maintenance = DeviceStatus::create(['label' => 'Maintenance',    'color' => 'orange']);
-        $oos         = DeviceStatus::create(['label' => 'Out of Service', 'color' => 'red']);
+        $good        = DeviceStatus::firstOrCreate(['label' => 'Good'],           ['color' => 'green']);
+        $maintenance = DeviceStatus::firstOrCreate(['label' => 'Maintenance'],    ['color' => 'orange']);
+        $oos         = DeviceStatus::firstOrCreate(['label' => 'Out of Service'], ['color' => 'red']);
 
         // ============================================================
         // Admin account
         // ============================================================
 
-        $admin_user = User::create([
-            'username'    => 'admin',
-            'password'    => bcrypt('admin123'),
-            'access_type' => 'admin',
-        ]);
+        $admin_user = User::firstOrCreate(
+            ['username' => 'admin'],
+            [
+                'password'    => bcrypt('admin123'),
+                'access_type' => 'admin',
+            ]
+        );
 
-        $staff1 = User::create([
-            'username'    => 'jdelacruz',
-            'password'    => bcrypt('password'),
-            'access_type' => 'staff',
-        ]);
+        $staff1 = User::firstOrCreate(
+            ['username' => 'jdelacruz'],
+            [
+                'password'    => bcrypt('password'),
+                'access_type' => 'staff',
+            ]
+        );
 
-        $staff2 = User::create([
-            'username'    => 'mreyes',
-            'password'    => bcrypt('password'),
-            'access_type' => 'staff',
-        ]);
+        $staff2 = User::firstOrCreate(
+            ['username' => 'mreyes'],
+            [
+                'password'    => bcrypt('password'),
+                'access_type' => 'staff',
+            ]
+        );
 
-        // Rooms, devices, parts, logs — each in its own seeder class
+        // Rooms, storage rooms, devices, parts, logs — each in its own seeder class
         $this->call([
             RoomSeeder::class,
-            InventorySeeder::class, 
+            StorageRoomSeeder::class,
+            InventorySeeder::class,
         ]);
     }
 }
