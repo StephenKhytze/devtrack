@@ -4,7 +4,7 @@ FROM php:8.4-cli-alpine
 ENV COMPOSER_ALLOW_SUPERUSER=1 \
     COMPOSER_MEMORY_LIMIT=-1
 
-# Install required system tools and libraries
+# Install required system tools, libraries, and NodeJS/NPM for Vite asset compilation
 RUN apk add --no-cache \
     ca-certificates \
     curl \
@@ -12,6 +12,8 @@ RUN apk add --no-cache \
     unzip \
     zip \
     bash \
+    nodejs \
+    npm \
     icu-dev \
     libpng-dev \
     libzip-dev \
@@ -44,14 +46,17 @@ WORKDIR /var/www
 # Copy all project files
 COPY . .
 
-# Install production dependencies safely with no-scripts and ignore-platform-reqs
+# Compile frontend assets with Vite during Docker build
+RUN npm install && npm run build && rm -rf node_modules
+
+# Install production PHP dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts --ignore-platform-reqs
 
-# Set directory permissions for Laravel storage and cache
-RUN chown -R www-data:www-data storage bootstrap/cache && \
+# Set directory permissions for Laravel storage, cache, and compiled build files
+RUN chown -R www-data:www-data storage bootstrap/cache public/build && \
     chmod -R 775 storage bootstrap/cache
 
 EXPOSE 8000
 
-# At runtime: discover packages with active secrets, cache configurations, run migrations, and serve
+# At runtime: discover packages, cache configs/routes/views, run migrations, and serve
 CMD sh -c "php artisan package:discover --ansi && php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=${PORT:-8000}"
