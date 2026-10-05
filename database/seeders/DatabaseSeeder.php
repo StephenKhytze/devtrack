@@ -34,27 +34,48 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        $staff1 = User::firstOrCreate(
-            ['username' => 'jdelacruz'],
-            [
-                'password'    => bcrypt('password'),
-                'access_type' => 'staff',
-            ]
-        );
+        $dbName = config('database.connections.mysql.database', env('DB_DATABASE', 'devtrack'));
+        $isMock = str_contains($dbName, 'demo') || str_contains($dbName, 'mock') || env('APP_USE_MOCK_DATA', false);
 
-        $staff2 = User::firstOrCreate(
-            ['username' => 'mreyes'],
-            [
-                'password'    => bcrypt('password'),
-                'access_type' => 'staff',
-            ]
-        );
+        if ($isMock) {
+            $staff1 = User::firstOrCreate(
+                ['username' => 'alex.cruz'],
+                [
+                    'password'    => bcrypt('Password123!'),
+                    'access_type' => 'staff',
+                ]
+            );
+
+            $staff2 = User::firstOrCreate(
+                ['username' => 'maria.santos'],
+                [
+                    'password'    => bcrypt('Password123!'),
+                    'access_type' => 'staff',
+                ]
+            );
+        } else {
+            $staff1 = User::firstOrCreate(
+                ['username' => 'jdelacruz'],
+                [
+                    'password'    => bcrypt('password'),
+                    'access_type' => 'staff',
+                ]
+            );
+
+            $staff2 = User::firstOrCreate(
+                ['username' => 'mreyes'],
+                [
+                    'password'    => bcrypt('password'),
+                    'access_type' => 'staff',
+                ]
+            );
+        }
 
         // Rooms, storage rooms, devices, parts, logs — each in its own seeder class
         $this->call([
             RoomSeeder::class,
             StorageRoomSeeder::class,
-            InventorySeeder::class,
+            $isMock ? MockInventorySeeder::class : InventorySeeder::class,
         ]);
     }
 }

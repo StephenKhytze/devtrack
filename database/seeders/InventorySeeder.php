@@ -35,10 +35,84 @@ class InventorySeeder extends Seeder
         // accurately afterward.
         // ============================================================
 
-        $devices = [
+        $devices = self::getDevices();
 
-            // ── Desktops (Computer's Inventory) ─────────────────
+        // ============================================================
+        // Create everything. Standalone devices are spread across a
+        // simple grid on the floor map; room-assigned devices default
+        // to position 40/40 inside their room. Reposition precisely
+        // afterward using "Edit devices" on the Floor Layout / Room
+        // Layout pages.
+        // ============================================================
 
+        $standaloneIndex = 0;
+
+        foreach ($devices as $d) {
+            $roomId = null;
+            $posX   = 40;
+            $posY   = 40;
+
+            if ($d['room'] !== null) {
+                if (!isset($rooms[$d['room']])) {
+                    throw new \Exception("InventorySeeder: room '{$d['room']}' not found for device '{$d['name']}'. Make sure RoomSeeder runs before InventorySeeder.");
+                }
+                $roomId = $rooms[$d['room']];
+            } else {
+                $col  = $standaloneIndex % 8;
+                $row  = intdiv($standaloneIndex, 8);
+                $posX = 6 + $col * 12;
+                $posY = 6 + $row * 12;
+                $standaloneIndex++;
+            }
+
+            $query = Device::query();
+            if (!empty($d['inventory_number'])) {
+                $query->where('inventory_number', $d['inventory_number']);
+            } elseif (!empty($d['serial_number'])) {
+                $query->where('serial_number', $d['serial_number']);
+            } else {
+                $query->where('name', $d['name'])->where('room_id', $roomId);
+            }
+
+            $device = $query->first();
+
+            if (!$device) {
+                $device = Device::create([
+                    'name'             => $d['name'],
+                    'type'             => $d['type'],
+                    'model_num'        => $d['model_num'],
+                    'serial_number'    => $d['serial_number'],
+                    'inventory_number' => $d['inventory_number'],
+                    'specs'            => $d['specs'],
+                    'sub_parts'        => !empty($d['parts']),
+                    'status_id'        => $statusMap[$d['status']],
+                    'room_id'          => $roomId,
+                    'pos_x'            => $posX,
+                    'pos_y'            => $posY,
+                ]);
+
+                foreach ($d['parts'] as $p) {
+                    DevicePart::create([
+                        'device_id'        => $device->id,
+                        'name'             => $p['name'],
+                        'model_num'        => $p['model_num'],
+                        'inventory_number' => $p['inventory_number'] ?? null,
+                        'serial_number'    => $p['serial_number'] ?? null,
+                        'status_id'        => $statusMap[$d['status']], // parts default to parent device's status
+                    ]);
+                }
+            }
+        }
+    }
+
+    /**
+     * Get the master blueprint of all 72 devices and their sub-parts.
+     *
+     * @return array<int, array>
+     */
+    public static function getDevices(): array
+    {
+        return [
             [
                 'name' => 'Cosico, Edmundo Jr.',
                 'type' => 'desktop',
@@ -1034,74 +1108,6 @@ class InventorySeeder extends Seeder
                 'parts' => [],
             ],
         ];
-
-
-        // ============================================================
-        // Create everything. Standalone devices are spread across a
-        // simple grid on the floor map; room-assigned devices default
-        // to position 40/40 inside their room. Reposition precisely
-        // afterward using "Edit devices" on the Floor Layout / Room
-        // Layout pages.
-        // ============================================================
-
-        $standaloneIndex = 0;
-
-        foreach ($devices as $d) {
-            $roomId = null;
-            $posX   = 40;
-            $posY   = 40;
-
-            if ($d['room'] !== null) {
-                if (!isset($rooms[$d['room']])) {
-                    throw new \Exception("InventorySeeder: room '{$d['room']}' not found for device '{$d['name']}'. Make sure RoomSeeder runs before InventorySeeder.");
-                }
-                $roomId = $rooms[$d['room']];
-            } else {
-                $col  = $standaloneIndex % 8;
-                $row  = intdiv($standaloneIndex, 8);
-                $posX = 6 + $col * 12;
-                $posY = 6 + $row * 12;
-                $standaloneIndex++;
-            }
-
-            $query = Device::query();
-            if (!empty($d['inventory_number'])) {
-                $query->where('inventory_number', $d['inventory_number']);
-            } elseif (!empty($d['serial_number'])) {
-                $query->where('serial_number', $d['serial_number']);
-            } else {
-                $query->where('name', $d['name'])->where('room_id', $roomId);
-            }
-
-            $device = $query->first();
-
-            if (!$device) {
-                $device = Device::create([
-                    'name'             => $d['name'],
-                    'type'             => $d['type'],
-                    'model_num'        => $d['model_num'],
-                    'serial_number'    => $d['serial_number'],
-                    'inventory_number' => $d['inventory_number'],
-                    'specs'            => $d['specs'],
-                    'sub_parts'        => !empty($d['parts']),
-                    'status_id'        => $statusMap[$d['status']],
-                    'room_id'          => $roomId,
-                    'pos_x'            => $posX,
-                    'pos_y'            => $posY,
-                ]);
-
-                foreach ($d['parts'] as $p) {
-                    DevicePart::create([
-                        'device_id'        => $device->id,
-                        'name'             => $p['name'],
-                        'model_num'        => $p['model_num'],
-                        'inventory_number' => $p['inventory_number'] ?? null,
-                        'serial_number'    => $p['serial_number'] ?? null,
-                        'status_id'        => $statusMap[$d['status']], // parts default to parent device's status
-                    ]);
-                }
-            }
-        }
     }
 }
 
