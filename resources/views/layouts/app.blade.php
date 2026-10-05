@@ -11,7 +11,7 @@
     {{-- Header --}}
     <header class="w-full bg-white border-b border-gray-200 flex items-center px-6 py-4">
         <div class="flex items-center gap-3">
-            <img src="{{ asset('images/Philhealth_Logo.png') }}" alt="PhilHealth logo" class="h-12">
+            <img src="{{ asset('images/PhilHealth_Logo.png') }}" alt="PhilHealth logo" class="h-12">
             <h1 class="text-xl font-semibold">DevTrack</h1>
         </div>
         <div class="ml-auto flex items-center gap-4">
