@@ -35,7 +35,10 @@ class DatabaseSeeder extends Seeder
         );
 
         $dbName = config('database.connections.mysql.database', env('DB_DATABASE', 'devtrack'));
-        $isMock = str_contains($dbName, 'demo') || str_contains($dbName, 'mock') || env('APP_USE_MOCK_DATA', false);
+        $isMock = filter_var(env('APP_USE_MOCK_DATA', true), FILTER_VALIDATE_BOOLEAN) 
+            || str_contains($dbName, 'demo') 
+            || str_contains($dbName, 'mock') 
+            || app()->isProduction();
 
         if ($isMock) {
             $staff1 = User::firstOrCreate(
