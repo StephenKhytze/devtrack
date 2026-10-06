@@ -58,5 +58,5 @@ RUN chown -R www-data:www-data storage bootstrap/cache public/build && \
 
 EXPOSE 8000
 
-# At runtime: discover packages, link storage, cache configs/routes/views, reset & seed clean mock data, and serve
-CMD sh -c "php artisan package:discover --ansi && php artisan storage:link || true && php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan migrate:fresh --seed --force && php artisan serve --host=0.0.0.0 --port=${PORT:-8000}"
+# At runtime: discover packages, remove conflicting storage symlink, cache configs/routes/views, reset & seed clean mock data, and serve
+CMD sh -c "rm -rf public/storage && php artisan package:discover --ansi && php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan migrate:fresh --seed --force && php artisan serve --host=0.0.0.0 --port=${PORT:-8000}"
