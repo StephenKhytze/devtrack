@@ -8,8 +8,8 @@
         ← Back to Device List
     </a>
 
-    <span class="ml-auto text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-        Total records: <strong class="text-gray-800">{{ $logs->total() }}</strong>
+    <span class="ml-auto text-base text-gray-500">
+        Total records: <strong class="text-gray-800 font-medium">{{ $logs->total() }}</strong>
     </span>
 @endsection
 
@@ -79,7 +79,7 @@
             </form>
 
             {{-- Sort Controls --}}
-            <div class="flex items-center gap-2 pt-2 border-t border-gray-100 text-sm">
+            <div class="flex items-center gap-2 pt-2 border-t border-gray-100 text-base">
                 <span class="text-gray-500">Sort by:</span>
                 <div class="flex border border-gray-300 rounded-md overflow-hidden">
                     @foreach ([
@@ -88,7 +88,7 @@
             'action' => 'Action',
         ] as $value => $label)
                         <a href="{{ request()->fullUrlWithQuery(['sort' => $value, 'page' => 1]) }}"
-                            class="px-3 py-1.5 font-medium transition
+                            class="px-4 py-1.5 font-medium transition
                               {{ $sort === $value ? 'bg-green-700 text-white' : 'text-gray-500 hover:bg-gray-100' }}">
                             {{ $label }}
                         </a>
@@ -102,32 +102,17 @@
             <table class="w-full text-base">
                 <thead class="bg-gray-50 border-b border-gray-200">
                     <tr>
-                        <th class="text-left px-4 py-3 font-medium text-gray-600 w-44">Date & Time</th>
-                        <th class="text-left px-4 py-3 font-medium text-gray-600 w-48">Device</th>
-                        <th class="text-left px-4 py-3 font-medium text-gray-600 w-36">Action</th>
+                        <th class="text-left px-4 py-3 font-medium text-gray-600 w-48">Date & Time</th>
+                        <th class="text-left px-4 py-3 font-medium text-gray-600 w-52">Device</th>
+                        <th class="text-left px-4 py-3 font-medium text-gray-600 w-40">Action</th>
                         <th class="text-left px-4 py-3 font-medium text-gray-600">Details / Description</th>
-                        <th class="text-left px-4 py-3 font-medium text-gray-600 w-36">Performed By</th>
+                        <th class="text-left px-4 py-3 font-medium text-gray-600 w-44">Performed By</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
                     @forelse ($logs as $log)
-                        @php
-                            $badgeStyles = match ($log->action) {
-                                'created' => 'bg-green-50 text-green-700 border-green-200',
-                                'updated', 'quick_updated' => 'bg-blue-50 text-blue-700 border-blue-200',
-                                'status_changed' => 'bg-amber-50 text-amber-700 border-amber-200',
-                                'moved' => 'bg-teal-50 text-teal-700 border-teal-200',
-                                'part_added',
-                                'part_updated',
-                                'part_deleted'
-                                    => 'bg-indigo-50 text-indigo-700 border-indigo-200',
-                                'deleted' => 'bg-red-50 text-red-700 border-red-200',
-                                'maintenance' => 'bg-purple-50 text-purple-700 border-purple-200',
-                                default => 'bg-gray-50 text-gray-700 border-gray-200',
-                            };
-                        @endphp
                         <tr class="hover:bg-gray-50 transition">
-                            <td class="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+                            <td class="px-4 py-3 text-base text-gray-500 whitespace-nowrap">
                                 {{ $log->created_at->format('M d, Y h:i A') }}
                             </td>
                             <td class="px-4 py-3 font-medium text-gray-800">
@@ -141,13 +126,10 @@
                                     <span class="text-xs text-gray-400 block">(deleted)</span>
                                 @endif
                             </td>
-                            <td class="px-4 py-3">
-                                <span
-                                    class="px-2.5 py-1 rounded-full text-xs font-medium border inline-block {{ $badgeStyles }}">
-                                    {{ $actions[$log->action] ?? ucfirst(str_replace('_', ' ', $log->action)) }}
-                                </span>
+                            <td class="px-4 py-3 text-base text-gray-800 whitespace-nowrap">
+                                {{ $actions[$log->action] ?? ucfirst(str_replace('_', ' ', $log->action)) }}
                             </td>
-                            <td class="px-4 py-3 text-sm text-gray-700">
+                            <td class="px-4 py-3 text-base text-gray-700">
                                 <p class="font-normal">{{ $log->description }}</p>
                                 @if ($log->changes && is_array($log->changes) && count($log->changes) > 0)
                                     <div class="mt-1 flex flex-wrap gap-2 text-xs">
@@ -167,12 +149,12 @@
                                     </div>
                                 @endif
                             </td>
-                            <td class="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
+                            <td class="px-4 py-3 text-base text-gray-600 whitespace-nowrap">
                                 @if ($log->user)
                                     <span class="inline-flex items-center gap-1.5">
                                         <span>{{ $log->user->username }}</span>
                                         <span
-                                            class="px-1.5 py-0.5 rounded text-xs {{ $log->user->access_type === 'admin' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500' }}">
+                                            class="px-2 py-0.5 rounded-full text-sm {{ $log->user->access_type === 'admin' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500' }}">
                                             {{ $log->user->access_type }}
                                         </span>
                                     </span>
