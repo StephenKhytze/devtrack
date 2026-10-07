@@ -321,6 +321,10 @@
 
             {{-- Footer --}}
             <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-2 bg-gray-50">
+                <a id="modal-maintenance-link" href="#"
+                    class="px-4 py-2 text-base font-medium border border-gray-300 rounded-md hover:bg-gray-100 transition no-underline text-gray-700">
+                    Log Maintenance
+                </a>
                 @if (auth()->user()->access_type === 'admin')
                     <a id="modal-edit-link" href="#"
                         class="px-4 py-2 text-base font-medium border border-gray-300 rounded-md hover:bg-gray-100 transition no-underline text-gray-700">
@@ -346,6 +350,7 @@
 
         const storageDevices = @json($devices->items());
         const editBaseUrl = "{{ url('/devices') }}";
+        const maintenanceBaseUrl = "{{ url('/maintenance/create') }}";
 
         const statusColors = {
             green: {
@@ -383,6 +388,11 @@
             badge.textContent = device.status?.label || '—';
             badge.style.background = colors.bg;
             badge.style.color = colors.text;
+
+            const maintLink = document.getElementById('modal-maintenance-link');
+            if (maintLink) {
+                maintLink.href = `${maintenanceBaseUrl}/${device.id}`;
+            }
 
             const editLink = document.getElementById('modal-edit-link');
             if (editLink) {
