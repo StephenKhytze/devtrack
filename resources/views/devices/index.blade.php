@@ -93,7 +93,7 @@
     </div>
 
     {{-- Devices Table --}}
-    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+    <div class="bg-white border border-gray-200 rounded-xl overflow-x-auto shadow-sm">
         <table class="w-full text-base">
             <thead class="bg-gray-50 border-b border-gray-200">
                 <tr>
@@ -104,25 +104,25 @@
                     <th class="text-left px-3 py-3 font-medium text-gray-600 w-36">Model</th>
                     <th class="text-left px-3 py-3 font-medium text-gray-600 w-32">Specs</th>
                     <th class="text-left px-3 py-3 font-medium text-gray-600">Room</th>
-                    <th class="text-left px-3 py-3 font-medium text-gray-600">Status</th>
-                    <th class="text-left px-3 py-3 font-medium text-gray-600">Parts</th>
-                    <th class="text-left px-3 py-3 font-medium text-gray-600">Actions</th>
+                    <th class="text-left px-3 py-3 font-medium text-gray-600 whitespace-nowrap">Status</th>
+                    <th class="text-left px-3 py-3 font-medium text-gray-600 whitespace-nowrap">Parts</th>
+                    <th class="text-left px-3 py-3 font-medium text-gray-600 whitespace-nowrap">Actions</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
                 @forelse ($devices as $device)
                     <tr class="hover:bg-gray-50 transition cursor-pointer" onclick="openDeviceModal({{ $device->id }})">
-                        <td class="px-3 py-3 font-medium text-gray-800 whitespace-nowrap">{{ $device->name }}</td>
+                        <td class="px-3 py-3 font-medium text-gray-800 max-w-56 truncate" title="{{ $device->name }}">{{ $device->name }}</td>
                         <td class="px-3 py-3 capitalize text-gray-600 whitespace-nowrap">{{ $device->type }}</td>
                         <td class="px-3 py-3 text-gray-600 whitespace-nowrap">{{ $device->serial_number ?? '—' }}</td>
                         <td class="px-3 py-3 text-gray-600 whitespace-nowrap">{{ $device->inventory_number ?? '—' }}</td>
                         <td class="px-3 py-3 text-gray-600 max-w-36 truncate" title="{{ $device->model_num ?? '—' }}">
                             {{ $device->model_num ?? '—' }}
                         </td>
-                        <td class="px-3 py-3 text-gray-600 whitespace-nowrap max-w-40 truncate">{{ $device->specs ?? '—' }}</td>
-                        <td class="px-3 py-3 text-gray-600 w-40">{{ $device->room?->name ?? 'Standalone' }}</td>
-                        <td class="px-3 py-3">
-                            <span class="px-3 py-0.5 rounded-full text-base font-medium"
+                        <td class="px-3 py-3 text-gray-600 max-w-40 truncate" title="{{ $device->specs ?? '—' }}">{{ $device->specs ?? '—' }}</td>
+                        <td class="px-3 py-3 text-gray-600 max-w-32 truncate" title="{{ $device->room?->name ?? 'Standalone' }}">{{ $device->room?->name ?? 'Standalone' }}</td>
+                        <td class="px-3 py-3 whitespace-nowrap">
+                            <span class="px-3 py-0.5 rounded-full text-base font-medium inline-block whitespace-nowrap"
                                 style="
                                     background-color: {{
                                         match($device->status->color) {
@@ -143,8 +143,8 @@
                                 {{ $device->status->label }}
                             </span>
                         </td>
-                        <td class="px-3 py-3" onclick="event.stopPropagation()">
-                            @if ($device->sub_parts)
+                        <td class="px-3 py-3 whitespace-nowrap" onclick="event.stopPropagation()">
+                            @if ($device->sub_parts && $device->parts->isNotEmpty())
                                 <button onclick="toggleParts({{ $device->id }})"
                                         class="text-base text-green-700 underline hover:text-green-900 whitespace-nowrap cursor-pointer">
                                     Show parts ({{ $device->parts->count() }})
@@ -154,8 +154,8 @@
                             @endif
                         </td>
                         @if (Auth::user()->access_type === 'admin')
-                            <td class="px-3 py-3">
-                                <div class="flex items-center gap-2">
+                            <td class="px-3 py-3 whitespace-nowrap">
+                                <div class="flex items-center gap-2 whitespace-nowrap">
                                     <a href="{{ route('devices.edit', $device->id) }}"
                                     onclick="event.stopPropagation()"
                                     class="px-3 py-1 text-base border border-gray-300 rounded-md hover:bg-gray-100 transition no-underline text-gray-700">
@@ -164,7 +164,8 @@
                                     <form method="POST"
                                         action="{{ route('devices.destroy', $device->id) }}"
                                         onsubmit="return confirm('Delete this device?')"
-                                        onclick="event.stopPropagation()">
+                                        onclick="event.stopPropagation()"
+                                        class="inline">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit"
@@ -175,7 +176,7 @@
                                 </div>
                             </td>
                         @else
-                            <td class="px-3 py-3 text-sm text-gray-400">—</td>
+                            <td class="px-3 py-3 text-sm text-gray-400 whitespace-nowrap">—</td>
                         @endif
                     </tr>
 
@@ -204,7 +205,7 @@
                                                 <td class="py-2 pr-4 text-gray-500">{{ $part->inventory_number ?? '—' }}</td>
                                                 <td class="py-2 pr-4 text-gray-500">{{ $part->specs ?? '—' }}</td>
                                                 <td class="py-2">
-                                                    <span class="px-2 py-0.5 rounded-full text-sm font-medium"
+                                                    <span class="px-2 py-0.5 rounded-full text-sm font-medium inline-block whitespace-nowrap"
                                                         style="
                                                             background-color: {{
                                                                 match($part->status->color) {

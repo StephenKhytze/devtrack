@@ -100,7 +100,7 @@
         </div>
 
         {{-- Devices Table --}}
-        <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+        <div class="bg-white border border-gray-200 rounded-xl overflow-x-auto shadow-sm">
             <table class="w-full text-base">
                 <thead class="bg-gray-50 border-b border-gray-200">
                     <tr>
@@ -110,16 +110,16 @@
                         <th class="text-left px-4 py-3 font-medium text-gray-600">Inventory No.</th>
                         <th class="text-left px-4 py-3 font-medium text-gray-600 w-36">Model</th>
                         <th class="text-left px-4 py-3 font-medium text-gray-600 w-44">Specs</th>
-                        <th class="text-left px-4 py-3 font-medium text-gray-600">Status</th>
-                        <th class="text-left px-4 py-3 font-medium text-gray-600">Sub-parts</th>
-                        <th class="text-left px-4 py-3 font-medium text-gray-600">Actions</th>
+                        <th class="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">Status</th>
+                        <th class="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">Sub-parts</th>
+                        <th class="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
                     @forelse ($devices as $device)
                         <tr class="hover:bg-gray-50 transition cursor-pointer"
                             onclick="openDeviceModal({{ $device->id }})">
-                            <td class="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">
+                            <td class="px-4 py-3 font-medium text-gray-800 max-w-56 truncate" title="{{ $device->name }}">
                                 {{ $device->name }}
                             </td>
                             <td class="px-4 py-3 capitalize text-gray-600 whitespace-nowrap">
@@ -137,8 +137,8 @@
                             <td class="px-4 py-3 text-gray-600 max-w-44 truncate" title="{{ $device->specs ?? '—' }}">
                                 {{ $device->specs ?? '—' }}
                             </td>
-                            <td class="px-4 py-3">
-                                <span class="px-3 py-0.5 rounded-full text-base font-medium inline-block"
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                <span class="px-3 py-0.5 rounded-full text-base font-medium inline-block whitespace-nowrap"
                                     style="
                                       background-color: {{ match ($device->status->color) {
                                           'green' => '#dcfce7',
@@ -155,18 +155,18 @@
                                     {{ $device->status->label }}
                                 </span>
                             </td>
-                            <td class="px-4 py-3 text-base text-gray-600" onclick="event.stopPropagation()">
+                            <td class="px-4 py-3 text-base text-gray-600 whitespace-nowrap" onclick="event.stopPropagation()">
                                 @if ($device->sub_parts && $device->parts->isNotEmpty())
-                                    <button onclick="openDeviceModal({{ $device->id }})"
-                                        class="text-green-700 hover:text-green-900 font-medium underline">
-                                        {{ $device->parts->count() }} part(s)
+                                    <button onclick="toggleParts({{ $device->id }})"
+                                        class="text-base text-green-700 underline hover:text-green-900 whitespace-nowrap cursor-pointer">
+                                        Show parts ({{ $device->parts->count() }})
                                     </button>
                                 @else
-                                    <span class="text-gray-400">—</span>
+                                    <span class="text-gray-400 text-base">—</span>
                                 @endif
                             </td>
-                            <td class="px-4 py-3" onclick="event.stopPropagation()">
-                                <div class="flex items-center gap-2">
+                            <td class="px-4 py-3 whitespace-nowrap" onclick="event.stopPropagation()">
+                                <div class="flex items-center gap-2 whitespace-nowrap">
                                     @if (auth()->user()->access_type === 'admin')
                                         <a href="{{ route('devices.edit', $device->id) }}"
                                             class="px-3 py-1 text-base border border-gray-300 text-gray-700 rounded-md hover:bg-gray-100 transition no-underline">
@@ -188,6 +188,61 @@
                                 </div>
                             </td>
                         </tr>
+
+                        {{-- Sub-parts expand row --}}
+                        @if ($device->sub_parts && $device->parts->isNotEmpty())
+                            <tr id="parts-{{ $device->id }}" class="hidden bg-gray-50 border-b border-gray-100">
+                                <td colspan="9" class="px-6 py-3">
+                                    <p class="text-sm font-medium text-gray-500 mb-2">Sub-parts</p>
+                                    <table class="w-full text-sm">
+                                        <thead>
+                                            <tr class="text-left text-gray-400 font-normal">
+                                                <th class="pb-1 pr-4">Part name</th>
+                                                <th class="pb-1 pr-4">Model</th>
+                                                <th class="pb-1 pr-4">Serial number</th>
+                                                <th class="pb-1 pr-4">Inventory number</th>
+                                                <th class="pb-1 pr-4">Specs</th>
+                                                <th class="pb-1">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-gray-200">
+                                            @foreach ($device->parts as $part)
+                                                <tr>
+                                                    <td class="py-2 pr-4 font-medium text-gray-700">{{ $part->name }}</td>
+                                                    <td class="py-2 pr-4 text-gray-500">{{ $part->model_num ?? '—' }}</td>
+                                                    <td class="py-2 pr-4 text-gray-500">{{ $part->serial_number ?? '—' }}</td>
+                                                    <td class="py-2 pr-4 text-gray-500">{{ $part->inventory_number ?? '—' }}</td>
+                                                    <td class="py-2 pr-4 text-gray-500">{{ $part->specs ?? '—' }}</td>
+                                                    <td class="py-2">
+                                                        <span class="px-2 py-0.5 rounded-full text-sm font-medium inline-block whitespace-nowrap"
+                                                            style="
+                                                                background-color: {{
+                                                                    match($part->status->color) {
+                                                                        'green'  => '#dcfce7',
+                                                                        'orange' => '#fef9c3',
+                                                                        'red'    => '#fee2e2',
+                                                                        default  => '#f3f4f6'
+                                                                    }
+                                                                }};
+                                                                color: {{
+                                                                    match($part->status->color) {
+                                                                        'green'  => '#15803d',
+                                                                        'orange' => '#a16207',
+                                                                        'red'    => '#b91c1c',
+                                                                        default  => '#6b7280'
+                                                                    }
+                                                                }};">
+                                                            {{ $part->status->label }}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tr>
+                        @endif
+
                     @empty
                         <tr>
                             <td colspan="9" class="px-4 py-12 text-center text-gray-400">
@@ -282,6 +337,13 @@
     </div>
 
     <script>
+        function toggleParts(deviceId) {
+            const row = document.getElementById('parts-' + deviceId);
+            if (row) {
+                row.classList.toggle('hidden');
+            }
+        }
+
         const storageDevices = @json($devices->items());
         const editBaseUrl = "{{ url('/devices') }}";
 
