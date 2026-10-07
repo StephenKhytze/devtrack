@@ -6,7 +6,10 @@ use Illuminate\Database\Seeder;
 use App\Models\Device;
 use App\Models\DevicePart;
 use App\Models\DeviceStatus;
+use App\Models\DeviceUpdateLog;
+use App\Models\MaintenanceLog;
 use App\Models\Room;
+use App\Models\User;
 
 class MockInventorySeeder extends Seeder
 {
@@ -380,6 +383,444 @@ class MockInventorySeeder extends Seeder
                     'status_id'        => $statusMap[$d['status']] ?? $good->id,
                 ]);
             }
+        }
+
+        // Seed 10 mock devices for Local Office Storage & 10 for Regional Office Storage
+        $this->seedStorageMockDevices($statusMap);
+
+        // Seed 10 realistic mock maintenance logs
+        $this->seedMockMaintenanceLogs($statusMap);
+    }
+
+    /**
+     * Seed 10 devices for Local Office Storage and 10 for Regional Office Storage.
+     */
+    private function seedStorageMockDevices(array $statusMap): void
+    {
+        $localStorageRoom   = Room::where('name', 'Local Office Storage')->first();
+        $regionalStorageRoom = Room::where('name', 'Regional Office Storage')->first();
+
+        if (!$localStorageRoom || !$regionalStorageRoom) {
+            return;
+        }
+
+        $localStorageDevices = [
+            [
+                'name'      => 'Spare Workstation PC #1 (Local Office Storage)',
+                'type'      => 'desktop',
+                'model'     => 'Dell OptiPlex 7090 Micro',
+                'serial'    => 'SN-DES-2026-LOC-0001',
+                'inv'       => 'D5-2026-05-0101',
+                'specs'     => 'Intel Core i5-10400 @2.90GHz, 16GB DDR4, 512GB NVMe SSD, Intel UHD Graphics 630',
+                'status'    => 'good',
+                'parts'     => [
+                    ['name' => 'Main Monitor', 'model' => 'Dell E2422H 23.8" IPS FHD', 'serial' => 'SN-PRT-2026-0201-AA11', 'inv' => 'D3-2026-05-0201', 'specs' => '23.8-inch Full HD (1920x1080) IPS Anti-Glare, 75Hz, HDMI/VGA', 'status' => 'good'],
+                    ['name' => 'Keyboard', 'model' => 'Logitech K120 USB Keyboard', 'serial' => 'SN-PRT-2026-0202-AA12', 'inv' => 'D3-2026-05-0202', 'specs' => 'Wired USB Standard 104-Key Layout, Spill-Resistant, Low-Profile Keys', 'status' => 'good'],
+                    ['name' => 'Mouse', 'model' => 'Dell MS116 Optical Mouse', 'serial' => 'SN-PRT-2026-0203-AA13', 'inv' => 'D3-2026-05-0203', 'specs' => '1000 DPI Optical Sensor, USB Plug and Play, Ambidextrous 3-Button Design', 'status' => 'good'],
+                    ['name' => 'UPS', 'model' => 'CyberPower UT650EG 650VA', 'serial' => 'SN-PRT-2026-0204-AA14', 'inv' => 'D3-2026-05-0204', 'specs' => '650VA / 360W Line-Interactive AVR Battery Backup, 230V Universal Outlets', 'status' => 'good'],
+                ],
+            ],
+            [
+                'name'      => 'Spare Workstation PC #2 (Local Office Storage)',
+                'type'      => 'desktop',
+                'model'     => 'HP ProDesk 400 G7 SFF',
+                'serial'    => 'SN-DES-2026-LOC-0002',
+                'inv'       => 'D5-2026-06-0102',
+                'specs'     => 'Intel Core i3-12100 3.3GHz, 8GB DDR4, 256GB SSD, Intel UHD 730',
+                'status'    => 'maintenance',
+                'parts'     => [
+                    ['name' => 'Main Monitor', 'model' => 'HP P24v G4 23.8" Full HD', 'serial' => 'SN-PRT-2026-0205-AA15', 'inv' => 'D3-2026-06-0205', 'specs' => '23.8-inch Full HD (1920x1080) IPS Anti-Glare, 75Hz, HDMI/VGA', 'status' => 'good'],
+                    ['name' => 'Keyboard', 'model' => 'HP 125 Wired Desktop Keyboard', 'serial' => 'SN-PRT-2026-0206-AA16', 'inv' => 'D3-2026-06-0206', 'specs' => 'Wired USB Standard 104-Key Layout, Spill-Resistant', 'status' => 'good'],
+                    ['name' => 'Mouse', 'model' => 'HP 125 Wired Optical Mouse', 'serial' => 'SN-PRT-2026-0207-AA17', 'inv' => 'D3-2026-06-0207', 'specs' => '1000 DPI Optical Sensor, USB Plug and Play', 'status' => 'good'],
+                ],
+            ],
+            [
+                'name'      => 'Backup Service Laptop #1 (Local Office Storage)',
+                'type'      => 'laptop',
+                'model'     => 'Lenovo ThinkPad T14 Gen 3',
+                'serial'    => 'SN-LAP-2026-LOC-0003',
+                'inv'       => 'D5-2026-07-0103',
+                'specs'     => 'Intel Core i5-1235U (10 cores, up to 4.4GHz), 16GB DDR4, 512GB NVMe SSD, 14" FHD IPS, Win 11 Pro',
+                'status'    => 'good',
+                'parts'     => [],
+            ],
+            [
+                'name'      => 'Backup Service Laptop #2 (Local Office Storage)',
+                'type'      => 'laptop',
+                'model'     => 'Dell Latitude 5430',
+                'serial'    => 'SN-LAP-2026-LOC-0004',
+                'inv'       => 'D5-2026-07-0104',
+                'specs'     => 'Intel Core i5-1245U, 16GB DDR4, 512GB SSD, 14" FHD Anti-Glare Display, Win 11 Pro',
+                'status'    => 'good',
+                'parts'     => [],
+            ],
+            [
+                'name'      => 'Surplus Office Printer #1 (Local Office Storage)',
+                'type'      => 'printer',
+                'model'     => 'HP LaserJet Pro MFP 4103fdw',
+                'serial'    => 'SN-PRI-2026-LOC-0005',
+                'inv'       => 'D5-2026-08-0105',
+                'specs'     => 'Monochrome Laser Multi-function, 40 ppm, Auto 2-sided printing, Gigabit Ethernet & Wi-Fi',
+                'status'    => 'good',
+                'parts'     => [],
+            ],
+            [
+                'name'      => 'Defective Dot Matrix Printer (Local Office Storage)',
+                'type'      => 'printer',
+                'model'     => 'Epson LQ-310 24-Pin',
+                'serial'    => 'SN-PRI-2026-LOC-0006',
+                'inv'       => 'D5-2026-08-0106',
+                'specs'     => '24-Pin Narrow Carriage Impact Dot Matrix Printer, 347 cps, USB 2.0 & Parallel interface',
+                'status'    => 'oos',
+                'parts'     => [],
+            ],
+            [
+                'name'      => 'Reserve Telephone Handset #1 (Local Office Storage)',
+                'type'      => 'telephone',
+                'model'     => 'Cisco IP Phone 7841 Multi-Line',
+                'serial'    => 'SN-TEL-2026-LOC-0007',
+                'inv'       => 'D5-2026-09-0107',
+                'specs'     => '4-Line Gigabit IP Telephone, Backlit Graphical LCD, Dual Gigabit Ethernet, PoE enabled',
+                'status'    => 'good',
+                'parts'     => [],
+            ],
+            [
+                'name'      => 'Spare Monitor Unit #1 (Local Office Storage)',
+                'type'      => 'monitor',
+                'model'     => 'Dell E2422H 24" FHD IPS Display',
+                'serial'    => 'SN-MON-2026-LOC-0008',
+                'inv'       => 'D5-2026-09-0108',
+                'specs'     => '23.8-inch Full HD (1920x1080) IPS Anti-Glare, 75Hz, HDMI/VGA, VESA Mount 100x100mm',
+                'status'    => 'good',
+                'parts'     => [],
+            ],
+            [
+                'name'      => 'Archived Photocopier Unit (Local Office Storage)',
+                'type'      => 'photocopier',
+                'model'     => 'Canon imageRUNNER 2625i Multi-Function',
+                'serial'    => 'SN-PHO-2026-LOC-0009',
+                'inv'       => 'D5-2026-10-0109',
+                'specs'     => 'Monochrome Laser A3 MFP, Print / Copy / Color Scan, 25 ppm, Duplex Automatic Document Feeder',
+                'status'    => 'maintenance',
+                'parts'     => [],
+            ],
+            [
+                'name'      => 'Decommissioned Split AC Unit (Local Office Storage)',
+                'type'      => 'aircon',
+                'model'     => 'Condura Prima Inverter 1.5HP',
+                'serial'    => 'SN-AIR-2026-LOC-0010',
+                'inv'       => 'D5-2026-10-0110',
+                'specs'     => '1.5 HP Inverter Split Type AC, R32 Eco Refrigerant, Anti-Bacterial Filter (Pending Disposal)',
+                'status'    => 'oos',
+                'parts'     => [],
+            ],
+        ];
+
+        $regionalStorageDevices = [
+            [
+                'name'      => 'Regional Reserve Server Unit (Regional Office Storage)',
+                'type'      => 'network',
+                'model'     => 'Cisco Catalyst 2960-X 24-Port',
+                'serial'    => 'SN-NET-2026-REG-0001',
+                'inv'       => 'D5-2026-01-0201',
+                'specs'     => '24x Gigabit Ethernet Ports, 4x 1G SFP Uplinks, 370W PoE+ Power Budget, Layer 2 Switching',
+                'status'    => 'good',
+                'parts'     => [],
+            ],
+            [
+                'name'      => 'Regional Buffer Desktop PC #1 (Regional Office Storage)',
+                'type'      => 'desktop',
+                'model'     => 'ASUS ExpertCenter D5 SFF (D500SC)',
+                'serial'    => 'SN-DES-2026-REG-0002',
+                'inv'       => 'D5-2026-02-0202',
+                'specs'     => 'Intel Core i5-12400 2.5GHz, 16GB DDR4, 512GB M.2 PCIe NVMe SSD, Gigabit LAN, Win 11 Pro',
+                'status'    => 'good',
+                'parts'     => [
+                    ['name' => 'Main Monitor', 'model' => 'ASUS VA24EHE 23.8" Eye Care IPS', 'serial' => 'SN-PRT-2026-0208-BB21', 'inv' => 'D3-2026-02-0208', 'specs' => '23.8" Full HD 1080p IPS, 75Hz, FreeSync, Low Blue Light', 'status' => 'good'],
+                    ['name' => 'Keyboard', 'model' => 'Logitech K120 USB Keyboard', 'serial' => 'SN-PRT-2026-0209-BB22', 'inv' => 'D3-2026-02-0209', 'specs' => 'Wired USB Standard 104-Key Layout, Spill-Resistant', 'status' => 'good'],
+                    ['name' => 'Mouse', 'model' => 'Logitech B100 Optical USB Mouse', 'serial' => 'SN-PRT-2026-0210-BB23', 'inv' => 'D3-2026-02-0210', 'specs' => '1000 DPI Optical Sensor, USB Plug and Play', 'status' => 'good'],
+                    ['name' => 'UPS', 'model' => 'APC Back-UPS BX650LI-MS 650VA', 'serial' => 'SN-PRT-2026-0211-BB24', 'inv' => 'D3-2026-02-0211', 'specs' => '650VA / 390W Battery Backup with AVR Protection', 'status' => 'good'],
+                ],
+            ],
+            [
+                'name'      => 'Regional Buffer Desktop PC #2 (Regional Office Storage)',
+                'type'      => 'desktop',
+                'model'     => 'Lenovo ThinkCentre M70s Gen 3',
+                'serial'    => 'SN-DES-2026-REG-0003',
+                'inv'       => 'D5-2026-02-0203',
+                'specs'     => 'Intel Core i3-12100 3.3GHz, 8GB DDR4, 512GB SSD, Intel UHD Graphics 730, Win 11 Pro',
+                'status'    => 'good',
+                'parts'     => [
+                    ['name' => 'Main Monitor', 'model' => 'ViewSonic VA2432-H 24" IPS Frameless', 'serial' => 'SN-PRT-2026-0212-BB25', 'inv' => 'D3-2026-02-0212', 'specs' => '24" Full HD 1080p IPS, Frameless Design, HDMI/VGA', 'status' => 'good'],
+                    ['name' => 'Keyboard', 'model' => 'A4Tech ComfortKey KB-720 USB', 'serial' => 'SN-PRT-2026-0213-BB26', 'inv' => 'D3-2026-02-0213', 'specs' => 'Standard USB Wired Keyboard with Laser Engraved Keys', 'status' => 'good'],
+                    ['name' => 'Mouse', 'model' => 'A4Tech OP-620D USB Optical Mouse', 'serial' => 'SN-PRT-2026-0214-BB27', 'inv' => 'D3-2026-02-0214', 'specs' => '1000 DPI Optical Sensor, 2x Click Button, USB', 'status' => 'good'],
+                ],
+            ],
+            [
+                'name'      => 'Regional Floating Laptop #1 (Regional Office Storage)',
+                'type'      => 'laptop',
+                'model'     => 'HP ProBook 450 G9',
+                'serial'    => 'SN-LAP-2026-REG-0004',
+                'inv'       => 'D5-2026-03-0204',
+                'specs'     => 'Intel Core i5-1235U, 16GB RAM, 512GB SSD, 15.6" FHD IPS Anti-Glare, Windows 11 Pro',
+                'status'    => 'good',
+                'parts'     => [],
+            ],
+            [
+                'name'      => 'Regional Floating Laptop #2 (Regional Office Storage)',
+                'type'      => 'laptop',
+                'model'     => 'ASUS ExpertBook B1 (B1502)',
+                'serial'    => 'SN-LAP-2026-REG-0005',
+                'inv'       => 'D5-2026-03-0205',
+                'specs'     => 'Intel Core i7-1255U, 16GB DDR4, 1TB PCIe NVMe SSD, 15.6" FHD Display, Fingerprint Reader',
+                'status'    => 'maintenance',
+                'parts'     => [],
+            ],
+            [
+                'name'      => 'Heavy Duty Network Laser Printer (Regional Office Storage)',
+                'type'      => 'printer',
+                'model'     => 'Brother HL-L5200DW Enterprise Laser',
+                'serial'    => 'SN-PRI-2026-REG-0006',
+                'inv'       => 'D5-2026-04-0206',
+                'specs'     => 'High-speed duplex laser, 42 ppm, Gigabit Ethernet & Wireless, 520-sheet paper capacity',
+                'status'    => 'good',
+                'parts'     => [],
+            ],
+            [
+                'name'      => 'Standby IP Telephone Handset #1 (Regional Office Storage)',
+                'type'      => 'telephone',
+                'model'     => 'Yealink SIP-T31P HD VoIP Phone',
+                'serial'    => 'SN-TEL-2026-REG-0007',
+                'inv'       => 'D5-2026-04-0207',
+                'specs'     => '2-Line HD Voice VoIP Phone, Dual 10/100M Ethernet, PoE enabled, Opus Audio Codec',
+                'status'    => 'good',
+                'parts'     => [],
+            ],
+            [
+                'name'      => 'Standby IP Telephone Handset #2 (Regional Office Storage)',
+                'type'      => 'telephone',
+                'model'     => 'Grandstream GRP2614 IP Phone',
+                'serial'    => 'SN-TEL-2026-REG-0008',
+                'inv'       => 'D5-2026-05-0208',
+                'specs'     => '4-Line Carrier-Grade IP Phone, Dual Color LCD Screens, Integrated Dual-Band Wi-Fi',
+                'status'    => 'good',
+                'parts'     => [],
+            ],
+            [
+                'name'      => 'Archived Heavy-Duty Copier (Regional Office Storage)',
+                'type'      => 'photocopier',
+                'model'     => 'Kyocera TASKalfa 2554ci Heavy Duty',
+                'serial'    => 'SN-PHO-2026-REG-0009',
+                'inv'       => 'D5-2026-05-0209',
+                'specs'     => 'A3 Color Multifunction Copier, 25/25 ppm, 1200x1200 dpi, 10.1" Touchscreen, Dual Scan Processor',
+                'status'    => 'oos',
+                'parts'     => [],
+            ],
+            [
+                'name'      => 'Surplus Rackmount UPS Unit (Regional Office Storage)',
+                'type'      => 'other',
+                'model'     => 'APC Smart-UPS RT 3000VA 230V SURT3000XLI',
+                'serial'    => 'SN-OTH-2026-REG-0010',
+                'inv'       => 'D5-2026-06-0210',
+                'specs'     => '3000VA / 2100W On-Line Double Conversion UPS, 230V, LCD Status Display, SmartSlot Interface',
+                'status'    => 'maintenance',
+                'parts'     => [],
+            ],
+        ];
+
+        // Seed Local Office Storage devices
+        foreach ($localStorageDevices as $data) {
+            $device = Device::create([
+                'name'             => $data['name'],
+                'type'             => $data['type'],
+                'model_num'        => $data['model'],
+                'serial_number'    => $data['serial'],
+                'inventory_number' => $data['inv'],
+                'specs'            => $data['specs'],
+                'sub_parts'        => !empty($data['parts']),
+                'status_id'        => $statusMap[$data['status']],
+                'room_id'          => $localStorageRoom->id,
+                'pos_x'            => 0,
+                'pos_y'            => 0,
+            ]);
+
+            foreach ($data['parts'] as $p) {
+                DevicePart::create([
+                    'device_id'        => $device->id,
+                    'name'             => $p['name'],
+                    'model_num'        => $p['model'],
+                    'serial_number'    => $p['serial'],
+                    'inventory_number' => $p['inv'],
+                    'specs'            => $p['specs'],
+                    'status_id'        => $statusMap[$p['status']],
+                ]);
+            }
+        }
+
+        // Seed Regional Office Storage devices
+        foreach ($regionalStorageDevices as $data) {
+            $device = Device::create([
+                'name'             => $data['name'],
+                'type'             => $data['type'],
+                'model_num'        => $data['model'],
+                'serial_number'    => $data['serial'],
+                'inventory_number' => $data['inv'],
+                'specs'            => $data['specs'],
+                'sub_parts'        => !empty($data['parts']),
+                'status_id'        => $statusMap[$data['status']],
+                'room_id'          => $regionalStorageRoom->id,
+                'pos_x'            => 0,
+                'pos_y'            => 0,
+            ]);
+
+            foreach ($data['parts'] as $p) {
+                DevicePart::create([
+                    'device_id'        => $device->id,
+                    'name'             => $p['name'],
+                    'model_num'        => $p['model'],
+                    'serial_number'    => $p['serial'],
+                    'inventory_number' => $p['inv'],
+                    'specs'            => $p['specs'],
+                    'status_id'        => $statusMap[$p['status']],
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Seed 10 realistic maintenance log entries.
+     */
+    private function seedMockMaintenanceLogs(array $statusMap): void
+    {
+        $staff1 = User::where('username', 'alex.cruz')->first();
+        $staff2 = User::where('username', 'maria.santos')->first();
+        $admin  = User::where('username', 'admin')->first();
+
+        $defaultUser = $staff1 ?? $admin ?? User::first();
+        $user1 = $staff1 ?? $defaultUser;
+        $user2 = $staff2 ?? $defaultUser;
+
+        $logsData = [
+            [
+                'device_search' => 'Alexander M. Cruz',
+                'user'          => $user1,
+                'date'          => '2026-09-15',
+                'deadline'      => '2026-09-18',
+                'status_before' => $statusMap['maintenance'],
+                'status_after'  => $statusMap['good'],
+                'description'   => 'Replaced malfunctioning secondary monitor HDMI cable and re-seated RAM modules. Passed 64-bit memory diagnostic tests.',
+            ],
+            [
+                'device_search' => 'Dot Matrix Receipt Printer (Cashier',
+                'user'          => $user2,
+                'date'          => '2026-09-20',
+                'deadline'      => '2026-09-22',
+                'status_before' => $statusMap['oos'],
+                'status_after'  => $statusMap['good'],
+                'description'   => 'Cleared paper jam in tractor feed mechanism, cleaned printhead carriage rails with isopropanol, and installed fresh ribbon cartridge.',
+            ],
+            [
+                'device_search' => 'Administrative Laser Printer',
+                'user'          => $user1,
+                'date'          => '2026-09-28',
+                'deadline'      => '2026-10-10',
+                'status_before' => $statusMap['good'],
+                'status_after'  => $statusMap['maintenance'],
+                'description'   => 'Faint horizontal streaks appearing on output. Ordered replacement imaging drum unit; printer is in low-volume temporary use.',
+            ],
+            [
+                'device_search' => 'Server Room Inverter AC Unit',
+                'user'          => $user2,
+                'date'          => '2026-10-01',
+                'deadline'      => '2026-10-02',
+                'status_before' => $statusMap['maintenance'],
+                'status_after'  => $statusMap['good'],
+                'description'   => 'Conducted quarterly chemical cleaning of evaporator coils, checked refrigerant pressure (R32), and verified thermostat calibration.',
+            ],
+            [
+                'device_search' => 'Camille Joyce Soriano',
+                'user'          => $user1,
+                'date'          => '2026-10-02',
+                'deadline'      => '2026-10-04',
+                'status_before' => $statusMap['oos'],
+                'status_after'  => $statusMap['good'],
+                'description'   => 'Power supply unit (PSU) failure caused system shutdown. Swapped with new 300W 80+ certified PSU, updated OS security patches.',
+            ],
+            [
+                'device_search' => 'Spare Workstation PC #2 (Local Office Storage)',
+                'user'          => $user1,
+                'date'          => '2026-10-03',
+                'deadline'      => '2026-10-15',
+                'status_before' => $statusMap['oos'],
+                'status_after'  => $statusMap['maintenance'],
+                'description'   => 'Diagnosed faulty SATA SSD sector errors. Removed drive and requested requisition for 500GB NVMe SSD replacement.',
+            ],
+            [
+                'device_search' => 'Regional Floating Laptop #2',
+                'user'          => $user2,
+                'date'          => '2026-10-04',
+                'deadline'      => '2026-10-12',
+                'status_before' => $statusMap['good'],
+                'status_after'  => $statusMap['maintenance'],
+                'description'   => 'Intermittent spacebar and backspace key unresponsive. Sent request to authorized service vendor for keyboard module assembly.',
+            ],
+            [
+                'device_search' => 'Core Distribution Switch 24-Port',
+                'user'          => $user1,
+                'date'          => '2026-10-05',
+                'deadline'      => '2026-10-05',
+                'status_before' => $statusMap['maintenance'],
+                'status_after'  => $statusMap['good'],
+                'description'   => 'Upgraded RouterOS firmware to latest LTS release. Tested PoE negotiation across ports 1-16; verified VLAN 10 & 20 routing.',
+            ],
+            [
+                'device_search' => 'Contributions Workgroup Printer #7',
+                'user'          => $user2,
+                'date'          => '2026-10-06',
+                'deadline'      => '2026-10-08',
+                'status_before' => $statusMap['maintenance'],
+                'status_after'  => $statusMap['oos'],
+                'description'   => 'Main logic board communication error 0x7E detected. Hardware replacement cost exceeds unit depreciation value; recommended for unserviceable scrap.',
+            ],
+            [
+                'device_search' => 'Central Office Multi-Function Photocopier',
+                'user'          => $user1,
+                'date'          => '2026-10-07',
+                'deadline'      => '2026-10-07',
+                'status_before' => $statusMap['maintenance'],
+                'status_after'  => $statusMap['good'],
+                'description'   => 'Replaced developer unit and primary corona wire. Executed automated color calibration and multi-sheet feeder diagnostic run.',
+            ],
+        ];
+
+        foreach ($logsData as $ld) {
+            $device = Device::where('name', 'like', "%{$ld['device_search']}%")->first();
+            if (!$device) {
+                $device = Device::first();
+            }
+
+            MaintenanceLog::create([
+                'device_id'        => $device->id,
+                'performed_by'     => $ld['user']->id,
+                'date'             => $ld['date'],
+                'deadline'         => $ld['deadline'],
+                'description'      => $ld['description'],
+                'status_before_id' => $ld['status_before'],
+                'status_after_id'  => $ld['status_after'],
+            ]);
+
+            DeviceUpdateLog::record(
+                $device,
+                'maintenance',
+                "Maintenance logged by {$ld['user']->username}: {$ld['description']}",
+                [
+                    'status_before_id' => $ld['status_before'],
+                    'status_after_id'  => $ld['status_after'],
+                    'date'             => $ld['date'],
+                    'deadline'         => $ld['deadline'],
+                ],
+                $ld['user']
+            );
         }
     }
 
