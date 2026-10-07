@@ -122,7 +122,7 @@
                         <td class="px-3 py-3 text-gray-600 whitespace-nowrap max-w-40 truncate">{{ $device->specs ?? '—' }}</td>
                         <td class="px-3 py-3 text-gray-600 w-40">{{ $device->room?->name ?? 'Standalone' }}</td>
                         <td class="px-3 py-3">
-                            <span class="px-2 py-1 rounded-full text-sm font-medium"
+                            <span class="px-3 py-0.5 rounded-full text-base font-medium"
                                 style="
                                     background-color: {{
                                         match($device->status->color) {
@@ -146,11 +146,11 @@
                         <td class="px-3 py-3" onclick="event.stopPropagation()">
                             @if ($device->sub_parts)
                                 <button onclick="toggleParts({{ $device->id }})"
-                                        class="text-sm text-green-700 underline hover:text-green-900 whitespace-nowrap curosr-pointer">
+                                        class="text-base text-green-700 underline hover:text-green-900 whitespace-nowrap cursor-pointer">
                                     Show parts ({{ $device->parts->count() }})
                                 </button>
                             @else
-                                <span class="text-gray-400 text-sm">—</span>
+                                <span class="text-gray-400 text-base">—</span>
                             @endif
                         </td>
                         @if (Auth::user()->access_type === 'admin')
@@ -158,7 +158,7 @@
                                 <div class="flex items-center gap-2">
                                     <a href="{{ route('devices.edit', $device->id) }}"
                                     onclick="event.stopPropagation()"
-                                    class="px-2 py-1 text-base border border-gray-300 rounded hover:bg-gray-100 transition no-underline text-gray-700">
+                                    class="px-3 py-1 text-base border border-gray-300 rounded-md hover:bg-gray-100 transition no-underline text-gray-700">
                                         Edit
                                     </a>
                                     <form method="POST"
@@ -168,7 +168,7 @@
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit"
-                                                class="px-2 py-1 text-base border border-red-200 text-red-600 rounded hover:bg-red-50 transition">
+                                                class="px-3 py-1 text-base border border-red-300 text-red-600 rounded-md hover:bg-red-50 transition">
                                             Delete
                                         </button>
                                     </form>

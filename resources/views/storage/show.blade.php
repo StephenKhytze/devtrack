@@ -138,7 +138,7 @@
                                 {{ $device->specs ?? '—' }}
                             </td>
                             <td class="px-4 py-3">
-                                <span class="px-2.5 py-1 rounded-full text-xs font-medium inline-block"
+                                <span class="px-3 py-0.5 rounded-full text-base font-medium inline-block"
                                     style="
                                       background-color: {{ match ($device->status->color) {
                                           'green' => '#dcfce7',
@@ -155,7 +155,7 @@
                                     {{ $device->status->label }}
                                 </span>
                             </td>
-                            <td class="px-4 py-3 text-sm text-gray-600" onclick="event.stopPropagation()">
+                            <td class="px-4 py-3 text-base text-gray-600" onclick="event.stopPropagation()">
                                 @if ($device->sub_parts && $device->parts->isNotEmpty())
                                     <button onclick="openDeviceModal({{ $device->id }})"
                                         class="text-green-700 hover:text-green-900 font-medium underline">
@@ -167,13 +167,9 @@
                             </td>
                             <td class="px-4 py-3" onclick="event.stopPropagation()">
                                 <div class="flex items-center gap-2">
-                                    <button onclick="openDeviceModal({{ $device->id }})"
-                                        class="px-2.5 py-1 text-xs font-medium border border-gray-300 text-gray-600 rounded hover:bg-gray-100 transition">
-                                        View
-                                    </button>
                                     @if (auth()->user()->access_type === 'admin')
                                         <a href="{{ route('devices.edit', $device->id) }}"
-                                            class="px-2.5 py-1 text-xs font-medium border border-gray-300 text-gray-600 rounded hover:bg-gray-100 transition no-underline">
+                                            class="px-3 py-1 text-base border border-gray-300 text-gray-700 rounded-md hover:bg-gray-100 transition no-underline">
                                             Edit
                                         </a>
                                         <form method="POST" action="{{ route('devices.destroy', $device->id) }}"
@@ -182,10 +178,12 @@
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit"
-                                                class="px-2.5 py-1 text-xs font-medium border border-red-200 text-red-600 rounded hover:bg-red-50 transition">
+                                                class="px-3 py-1 text-base border border-red-300 text-red-600 rounded-md hover:bg-red-50 transition">
                                                 Delete
                                             </button>
                                         </form>
+                                    @else
+                                        <span class="text-gray-400 text-base">—</span>
                                     @endif
                                 </div>
                             </td>
