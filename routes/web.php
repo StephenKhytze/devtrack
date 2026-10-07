@@ -58,6 +58,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/maintenance/{log}', [MaintenanceLogController::class, 'show'])->name('maintenance.show');
     Route::get('/maintenance/{log}/edit', [MaintenanceLogController::class, 'edit'])->name('maintenance.edit');
     Route::put('/maintenance/{log}', [MaintenanceLogController::class, 'update'])->name('maintenance.update');
+    Route::delete('/maintenance/{log}', [MaintenanceLogController::class, 'destroy'])->name('maintenance.destroy');
 
     // Floor
     Route::middleware(['auth', 'admin'])->group(function () {

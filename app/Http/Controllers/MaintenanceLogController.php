@@ -102,6 +102,7 @@ class MaintenanceLogController extends Controller
             'device_id'        => $request->device_id,
             'performed_by'     => $user->id,
             'date'             => $request->date,
+            'deadline'         => $request->deadline,
             'description'      => $request->description,
             'status_before_id' => $request->status_before_id,
             'status_after_id'  => $request->status_after_id,
@@ -134,13 +135,15 @@ class MaintenanceLogController extends Controller
 
         return view('maintenance.show', compact('log'));
     }
+
     public function edit(MaintenanceLog $log)
     {
         $devices  = Device::with('status')->orderBy('name')->get();
         $statuses = DeviceStatus::all();
+        $users    = User::all();
         $log->load(['device', 'statusBefore', 'statusAfter', 'performedBy']);
 
-        return view('maintenance.edit', compact('log', 'devices', 'statuses'));
+        return view('maintenance.edit', compact('log', 'devices', 'statuses', 'users'));
     }
 
     public function update(Request $request, MaintenanceLog $log)
@@ -187,5 +190,28 @@ class MaintenanceLogController extends Controller
 
         return redirect()->route('maintenance.index')
                         ->with('success', 'Maintenance log updated successfully.');
+    }
+
+    public function destroy(MaintenanceLog $log)
+    {
+        $device = $log->device;
+        $user   = auth()->user();
+
+        \App\Models\DeviceUpdateLog::record(
+            $device,
+            'maintenance',
+            "Maintenance log deleted: {$log->description}",
+            [
+                'date'             => $log->date,
+                'status_before_id' => $log->status_before_id,
+                'status_after_id'  => $log->status_after_id,
+            ],
+            $user
+        );
+
+        $log->delete();
+
+        return redirect()->route('maintenance.index')
+                        ->with('success', 'Maintenance log deleted successfully.');
     }
 }
