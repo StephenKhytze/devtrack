@@ -87,19 +87,19 @@
     </div>
 
     {{-- Maintenance Table --}}
-    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+    <div class="bg-white border border-gray-200 rounded-xl overflow-x-auto shadow-sm">
         <table class="w-full text-base">
             <thead class="bg-gray-50 border-b border-gray-200">
                 <tr>
-                    <th class="text-left px-4 py-3 font-medium text-gray-600">Date</th>
+                    <th class="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">Date</th>
                     <th class="text-left px-4 py-3 font-medium text-gray-600">Device</th>
                     <th class="text-left px-4 py-3 font-medium text-gray-600">Room</th>
-                    <th class="text-left px-4 py-3 font-medium text-gray-600">Performed by</th>
-                    <th class="text-left px-4 py-3 font-medium text-gray-600">Status before</th>
-                    <th class="text-left px-4 py-3 font-medium text-gray-600">Status after</th>
+                    <th class="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">Performed by</th>
+                    <th class="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">Status before</th>
+                    <th class="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">Status after</th>
                     <th class="text-left px-4 py-3 font-medium text-gray-600">Description</th>
-                    <th class="text-left px-4 py-3 font-medium text-gray-600">Deadline</th>
-                    <th class="text-left px-4 py-3 font-medium text-gray-600">Actions</th>
+                    <th class="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">Deadline</th>
+                    <th class="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">Actions</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
@@ -109,17 +109,17 @@
                         <td class="px-4 py-3 text-gray-600 whitespace-nowrap">
                             {{ \Carbon\Carbon::parse($log->date)->format('M d, Y') }}
                         </td>
-                        <td class="px-4 py-3 font-medium text-gray-800">
+                        <td class="px-4 py-3 font-medium text-gray-800 max-w-56 truncate" title="{{ $log->device->name }}">
                             {{ $log->device->name }}
                         </td>
-                        <td class="px-4 py-3 text-gray-600">
+                        <td class="px-4 py-3 text-gray-600 max-w-36 truncate" title="{{ $log->device->room?->name ?? 'Standalone' }}">
                             {{ $log->device->room?->name ?? 'Standalone' }}
                         </td>
-                        <td class="px-4 py-3 text-gray-600">
+                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap">
                             {{ $log->performedBy->username }}
                         </td>
-                        <td class="px-4 py-3">
-                            <span class="px-2 py-1 rounded-full text-sm font-medium"
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <span class="px-2 py-1 rounded-full text-sm font-medium inline-block whitespace-nowrap"
                                   style="
                                       background-color: {{
                                           match($log->statusBefore->color) {
@@ -140,8 +140,8 @@
                                 {{ $log->statusBefore->label }}
                             </span>
                         </td>
-                        <td class="px-4 py-3">
-                            <span class="px-2 py-1 rounded-full text-sm font-medium"
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <span class="px-2 py-1 rounded-full text-sm font-medium inline-block whitespace-nowrap"
                                   style="
                                       background-color: {{
                                           match($log->statusAfter->color) {
@@ -182,14 +182,15 @@
                             @endif
                         </td>
                         @if (Auth::user()->access_type === 'admin')
-                            <td class="px-4 py-3" onclick="event.stopPropagation()">
-                                <div class="flex items-center gap-2">
+                            <td class="px-4 py-3 whitespace-nowrap" onclick="event.stopPropagation()">
+                                <div class="flex items-center gap-2 whitespace-nowrap">
                                     <a href="{{ route('maintenance.edit', $log->id) }}"
                                        class="px-2 py-1 text-base border border-gray-300 rounded hover:bg-gray-100 transition no-underline text-gray-700">
                                         Edit
                                     </a>
                                     <form method="POST" action="{{ route('maintenance.destroy', $log->id) }}"
-                                          onsubmit="return confirm('Delete this log?')">
+                                          onsubmit="return confirm('Delete this log?')"
+                                          class="inline">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit"
@@ -200,7 +201,7 @@
                                 </div>
                             </td>
                         @else
-                            <td class="px-4 py-3 text-sm text-gray-400">—</td>
+                            <td class="px-4 py-3 text-sm text-gray-400 whitespace-nowrap">—</td>
                         @endif
                     </tr>
                 @empty
