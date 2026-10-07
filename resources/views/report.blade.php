@@ -29,7 +29,7 @@
     {{-- Report header --}}
     <div class="flex items-center justify-between border-b-2 border-green-700 pb-4 mb-6">
         <div class="flex items-center gap-4">
-            <img src="{{ asset('images/Philhealth_Logo.png') }}" alt="PhilHealth" class="h-14">
+            <img src="{{ asset('images/PhilHealth_Logo.png') }}" alt="PhilHealth" class="h-14">
             <div>
                 <h1 class="text-xl font-bold text-gray-800">DevTrack Device Status Report</h1>
                 <p class="text-base text-gray-500">PhilHealth Office — Device Management System</p>
@@ -128,7 +128,7 @@
     {{-- Page 2 header --}}
     <div class="flex items-center justify-between border-b-2 border-green-700 pb-4 mb-6">
         <div class="flex items-center gap-4">
-            <img src="{{ asset('images/Philhealth_Logo.png') }}" alt="PhilHealth" class="h-14">
+            <img src="{{ asset('images/PhilHealth_Logo.png') }}" alt="PhilHealth" class="h-14">
             <div>
                 <h1 class="text-xl font-bold text-gray-800">DevTrack Device Status Report</h1>
                 <p class="text-base text-gray-500">Room Breakdown</p>
@@ -182,7 +182,7 @@
     {{-- Page 3 header --}}
     <div class="flex items-center justify-between border-b-2 border-green-700 pb-4 mb-6">
         <div class="flex items-center gap-4">
-            <img src="{{ asset('images/Philhealth_Logo.png') }}" alt="PhilHealth" class="h-14">
+            <img src="{{ asset('images/PhilHealth_Logo.png') }}" alt="PhilHealth" class="h-14">
             <div>
                 <h1 class="text-xl font-bold text-gray-800">DevTrack Device Status Report</h1>
                 <p class="text-base text-gray-500">Recent Maintenance Logs</p>

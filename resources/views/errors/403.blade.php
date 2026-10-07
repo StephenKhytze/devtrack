@@ -7,7 +7,7 @@
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center">
     <div class="text-center flex flex-col items-center gap-4">
-        <img src="{{ asset('images/Philhealth_Logo.png') }}" alt="PhilHealth" class="h-16">
+        <img src="{{ asset('images/PhilHealth_Logo.png') }}" alt="PhilHealth" class="h-16">
         <h1 class="text-4xl font-bold text-gray-800">403</h1>
         <p class="text-lg font-medium text-gray-600">Access Denied</p>
         <p class="text-base text-gray-400">You don't have permission to access this page.</p>

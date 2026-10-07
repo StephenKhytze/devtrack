@@ -11,7 +11,7 @@
 
         {{-- Logo and title --}}
         <div class="flex flex-col items-center gap-3 mb-8">
-            <img src="{{ asset('images/Philhealth_Logo.png') }}"
+            <img src="{{ asset('images/PhilHealth_Logo.png') }}"
                  alt="PhilHealth logo"
                  class="h-16">
             <div class="text-center">

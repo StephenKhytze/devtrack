@@ -224,7 +224,7 @@
                     <div class="flex items-center justify-between">
                         <label class="text-sm font-semibold text-gray-700">Sub-parts</label>
                         <button type="button" onclick="addPartRowToPanel()"
-                                class="text-xs font-medium text-green-700 hover:text-green-800 border border-green-300 rounded px-2 py-0.5 hover:bg-green-50 transition">
+                                class="px-3 py-1 text-sm font-medium bg-green-700 text-white rounded-md hover:bg-green-800 transition">
                             + Add part
                         </button>
                     </div>
@@ -451,29 +451,35 @@
         ).join('');
 
         const row = document.createElement('div');
-        row.className = 'panel-part-row bg-gray-50 border border-gray-200 rounded-lg p-2.5 flex flex-col gap-2 relative text-sm';
+        row.className = 'panel-part-row bg-gray-50 border border-gray-200 rounded-lg p-3 flex flex-col gap-2 relative';
         row.dataset.partId = partId;
 
         row.innerHTML = `
-            <div class="flex items-center justify-between">
-                <span class="font-medium text-gray-700 text-xs">Sub-part</span>
+            <div class="flex items-center justify-between pb-1 border-b border-gray-200">
+                <span class="font-medium text-gray-700 text-sm">Sub-part</span>
                 <button type="button" onclick="this.closest('.panel-part-row').remove()"
-                        class="text-red-500 hover:text-red-700 text-xs px-1 font-semibold">✕ Remove</button>
+                        class="text-red-500 hover:text-red-700 text-sm font-medium">✕ Remove</button>
             </div>
-            <input type="text" placeholder="Part name *" value="${escapeHtml(name)}"
-                   class="part-name-input text-sm border border-gray-300 rounded px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-green-700">
-            <div class="grid grid-cols-2 gap-1.5">
+            <div class="flex flex-col gap-1">
+                <input type="text" placeholder="Part name *" value="${escapeHtml(name)}"
+                       class="part-name-input text-base border border-gray-300 rounded-md px-3 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-green-700">
+            </div>
+            <div class="flex flex-col gap-1">
                 <input type="text" placeholder="Model" value="${escapeHtml(model)}"
-                       class="part-model-input text-xs border border-gray-300 rounded px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-green-700">
-                <select class="part-status-select text-xs border border-gray-300 rounded px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-green-700">
+                       class="part-model-input text-base border border-gray-300 rounded-md px-3 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-green-700">
+            </div>
+            <div class="flex flex-col gap-1">
+                <select class="part-status-select text-base border border-gray-300 rounded-md px-3 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-green-700">
                     ${statusOpts}
                 </select>
             </div>
-            <div class="grid grid-cols-2 gap-1.5">
+            <div class="flex flex-col gap-1">
                 <input type="text" placeholder="Serial no." value="${escapeHtml(serial)}"
-                       class="part-serial-input text-xs border border-gray-300 rounded px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-green-700">
+                       class="part-serial-input text-base border border-gray-300 rounded-md px-3 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-green-700">
+            </div>
+            <div class="flex flex-col gap-1">
                 <input type="text" placeholder="Inv no." value="${escapeHtml(inv)}"
-                       class="part-inv-input text-xs border border-gray-300 rounded px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-green-700">
+                       class="part-inv-input text-base border border-gray-300 rounded-md px-3 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-green-700">
             </div>
         `;
         list.appendChild(row);

@@ -123,7 +123,7 @@
                     </div>
 
                     <div id="storage-room-note" class="hidden px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-600">
-                        📦 Storage room devices do not require a map location.
+                        Storage room devices do not require a map location.
                     </div>
 
                     <div id="position-inputs-container" class="flex flex-col gap-3">
