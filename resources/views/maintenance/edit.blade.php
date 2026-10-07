@@ -51,7 +51,8 @@
                            value="{{ old('performed_by_name', $log->performedBy->username) }}"
                            class="text-base border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700">
                     <datalist id="users-list">
-                        @foreach ($statuses as $status)
+                        @foreach ($users as $u)
+                            <option value="{{ $u->username }}">
                         @endforeach
                     </datalist>
                 </div>
