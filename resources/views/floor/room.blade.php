@@ -315,6 +315,10 @@
 
         {{-- Footer --}}
         <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-2 bg-gray-50">
+            <a id="modal-maintenance-link" href="#"
+               class="px-4 py-2 text-base font-medium border border-gray-300 text-gray-700 rounded-md hover:bg-gray-100 transition no-underline">
+                Log Maintenance
+            </a>
             @if (auth()->user()->access_type === 'admin')
                 <button id="modal-edit-btn"
                         onclick="editDeviceFromModal()"
@@ -345,6 +349,7 @@
     const devices            = @json($room->devices->load('status', 'room', 'parts.status'));
     const allStatuses        = @json($statuses);
     const editBaseUrl        = "{{ url('/devices') }}";
+    const maintenanceBaseUrl = "{{ url('/maintenance/create') }}";
     const devicePositionBase = "{{ url('/devices') }}";
     const csrfToken          = "{{ csrf_token() }}";
 
@@ -768,6 +773,11 @@
         badge.textContent      = device.status?.label || '—';
         badge.style.background = colors.bg;
         badge.style.color      = colors.text;
+
+        const maintLink = document.getElementById('modal-maintenance-link');
+        if (maintLink) {
+            maintLink.href = `${maintenanceBaseUrl}/${device.id}`;
+        }
 
         const partsSection = document.getElementById('modal-parts-section');
         const partsList    = document.getElementById('modal-parts');
